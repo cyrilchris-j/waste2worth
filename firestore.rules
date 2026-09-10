@@ -1,0 +1,179 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HELPER FUNCTIONS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(uid())).data.role;
+    }
+
+    function isRecycler() {
+      return isSignedIn() && userRole() == 'RECYCLER';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userRole() == 'ADMIN';
+    }
+
+    function isCollector() {
+      return isSignedIn() && userRole() == 'COLLECTOR';
+    }
+
+    function isVerifiedRecycler() {
+      return isRecycler() &&
+        get(/databases/$(database)/documents/recyclerProfiles/$(uid())).data.verificationStatus == 'VERIFIED';
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // USERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      // Any signed-in user can read their own record
+      allow read: if isSignedIn() && uid() == userId;
+      // Admin can read any user record
+      allow read: if isAdmin();
+      // Only the system (Firebase Functions) or the user can create
+      allow create: if isSignedIn() && uid() == userId;
+      // User can update own non-role fields; admin can update anything
+      allow update: if (isSignedIn() && uid() == userId &&
+                        !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
+                       isAdmin();
+      allow delete: if false; // never delete users
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RECYCLER PROFILES
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /recyclerProfiles/{recyclerId} {
+      // Recycler can read and write their own profile
+      allow read:   if isSignedIn() && uid() == recyclerId;
+      allow create: if isSignedIn() && uid() == recyclerId;
+      // Recycler can update own profile BUT cannot change verificationStatus themselves
+      allow update: if (isSignedIn() && uid() == recyclerId &&
+                        !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['verificationStatus', 'verifiedAt', 'verifiedBy'])) ||
+                       isAdmin();
+      // Admin can read all recycler profiles
+      allow read:   if isAdmin();
+      // Admin can update verification status
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // COLLECTOR PROFILES (Ashok's module — read-only for recycler matching)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /collectorProfiles/{collectorId} {
+      allow read:   if isSignedIn() && uid() == collectorId;
+      allow read:   if isAdmin();
+      allow create: if isSignedIn() && uid() == collectorId;
+      allow update: if (isSignedIn() && uid() == collectorId) || isAdmin();
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // LOTS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /lots/{lotId} {
+      // Verified recyclers can read LISTED lots (for browsing)
+      allow read: if isVerifiedRecycler() && resource.data.status == 'LISTED';
+      // Verified recyclers can read any lot they have a transaction for
+      allow read: if isVerifiedRecycler() &&
+                     exists(/databases/$(database)/documents/transactions/$(lotId)) == false &&
+                     resource.data.status == 'LISTED';
+      // Collector who owns the lot can read
+      allow read: if isCollector() && resource.data.collectorId == uid();
+      // Admin can read all
+      allow read: if isAdmin();
+
+      // Only collectors can create lots
+      allow create: if isCollector();
+      // Collector can update own lot; recycler can update status fields only on acceptance
+      allow update: if (isCollector() && resource.data.collectorId == uid()) ||
+                       (isVerifiedRecycler() &&
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['status', 'updatedAt'])) ||
+                       isAdmin();
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // OFFERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /offers/{offerId} {
+      allow read:   if isSignedIn() &&
+                       (resource.data.recyclerId == uid() || resource.data.collectorId == uid() || isAdmin());
+      allow create: if isVerifiedRecycler() && request.resource.data.recyclerId == uid();
+      allow update: if (isVerifiedRecycler() && resource.data.recyclerId == uid()) ||
+                       (isCollector() && resource.data.collectorId == uid()) ||
+                       isAdmin();
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSACTIONS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /transactions/{docId} {
+      // Recycler can read their own transactions
+      allow read: if isSignedIn() &&
+                     (resource.data.recyclerId == uid() ||
+                      resource.data.collectorId == uid() ||
+                      isAdmin());
+      // Only verified recyclers can create transactions (on lot acceptance)
+      allow create: if isVerifiedRecycler() && request.resource.data.recyclerId == uid();
+      // Recycler can update their own transaction status (not financial fields)
+      allow update: if (isSignedIn() && resource.data.recyclerId == uid() &&
+                        !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['agreedPrice', 'collectorId', 'lotId', 'recyclerId', 'platformFee'])) ||
+                       isAdmin();
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PROCESSING REPORTS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /processingReports/{reportId} {
+      // Recycler can read their own reports
+      allow read: if isSignedIn() &&
+                     (resource.data.recyclerId == uid() || isAdmin());
+      // Only the recycler who owns the transaction can create a report
+      allow create: if isVerifiedRecycler() && request.resource.data.recyclerId == uid();
+      // Recycler can update their own report (not recyclerId or transactionId)
+      allow update: if (isVerifiedRecycler() && resource.data.recyclerId == uid() &&
+                        !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['recyclerId', 'transactionId', 'lotId'])) ||
+                       isAdmin();
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUDIT LOGS — append-only
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /auditLogs/{logId} {
+      allow read:   if isAdmin();
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
