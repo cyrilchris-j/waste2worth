@@ -37,7 +37,10 @@ export default function AvailableLots() {
   const isVerified = recyclerProfile?.verificationStatus === 'VERIFIED';
 
   useEffect(() => {
-    if (!recyclerProfile) return;
+    if (!recyclerProfile) {
+      setLoading(false);
+      return;
+    }
     getListedLots(recyclerProfile.acceptedCategories)
       .then(setLots)
       .catch(() => setError('Failed to load lots. Check your connection and try again.'))

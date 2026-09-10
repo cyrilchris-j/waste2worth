@@ -16,7 +16,10 @@ export default function ProcessingReportList() {
   const [error, setError]     = useState('');
 
   useEffect(() => {
-    if (!recyclerProfile) return;
+    if (!recyclerProfile) {
+      setLoading(false);
+      return;
+    }
     getProcessingReportsByRecycler(recyclerProfile.recyclerId)
       .then((r) => setReports(r.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))))
       .catch(() => setError('Failed to load processing reports'))

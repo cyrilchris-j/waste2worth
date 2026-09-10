@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
-import { Button, Input, Textarea, VerificationBadge, Card } from '../../components/ui';
+import { Button, Input, Textarea, VerificationBadge, Card, LoadingSpinner } from '../../components/ui';
 import { updateRecyclerProfile } from '../../services/recyclerService';
 import { E_WASTE_CATEGORIES, PROCESSING_CAPABILITIES } from '../../types';
 import type { EWasteCategory, ProcessingCapability } from '../../types';
@@ -78,7 +78,15 @@ export default function RecyclerProfile() {
     }
   };
 
-  if (!recyclerProfile) return null;
+  if (!recyclerProfile) {
+    return (
+      <RecyclerLayout title="My Profile">
+        <div className="page-container">
+          <LoadingSpinner label="Loading profile…" />
+        </div>
+      </RecyclerLayout>
+    );
+  }
 
   return (
     <RecyclerLayout title="My Profile">

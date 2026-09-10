@@ -31,7 +31,10 @@ export default function MyTransactions() {
   const [filter, setFilter]             = useState<TransactionStatus | 'ALL'>('ALL');
 
   useEffect(() => {
-    if (!recyclerProfile) return;
+    if (!recyclerProfile) {
+      setLoading(false);
+      return;
+    }
     getRecyclerTransactions(recyclerProfile.recyclerId)
       .then((txns) => setTransactions(txns.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))))
       .catch(() => setError('Failed to load transactions'))

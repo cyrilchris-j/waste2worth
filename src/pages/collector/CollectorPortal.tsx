@@ -132,8 +132,12 @@ export default function CollectorPortal() {
     window.addEventListener('online', onlineHandler);
     window.addEventListener('offline', offlineHandler);
 
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
       navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    } else if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const reg of registrations) reg.unregister();
+      });
     }
 
     return () => {

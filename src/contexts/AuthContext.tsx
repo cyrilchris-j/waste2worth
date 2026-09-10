@@ -28,6 +28,41 @@ const AuthContext = createContext<AuthContextValue>({
   logout: async () => {},
 });
 
+const createDefaultRecyclerProfile = (userId: string, name?: string, email?: string): RecyclerProfile => ({
+  recyclerId: userId,
+  facilityName: name || 'EcoMetal Circular Solutions',
+  contactPerson: name || 'Cyril Chris',
+  email: email || 'cyril@recycler.local',
+  phone: '+91 91234 56789',
+  address: 'SIPCOT Industrial Park, Sriperumbudur',
+  state: 'Tamil Nadu',
+  pincode: '602105',
+  cpcbRegistrationNo: 'TNPCB/E-WASTE/2024/0981',
+  cpcbValidityDate: '2028-12-31',
+  dailyCapacityKg: 5000,
+  acceptedCategories: ['PCB', 'BATTERY', 'DISPLAY', 'CABLE', 'MIXED'],
+  verificationStatus: 'VERIFIED',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
+const createDefaultCollectorProfile = (userId: string, name?: string, email?: string): CollectorProfile => ({
+  collectorId: userId,
+  fullName: name || 'Ashok Kumar',
+  displayName: name || 'Ashok Kumar',
+  phone: '+91 98765 43210',
+  email: email || 'ashok@collector.local',
+  location: 'Ambattur Industrial Estate, Chennai',
+  collectorType: 'Independent Scrap Aggregator',
+  termsAccepted: true,
+  participationTermsAccepted: true,
+  status: 'VERIFIED',
+  createdAt: new Date().toISOString(),
+  totalLots: 4,
+  completedLots: 2,
+  earnings: 12500,
+});
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile]   = useState<User | null>(null);
@@ -46,11 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const rSnap = await getDoc(doc(db, 'recyclerProfiles', fbUser.uid));
           if (rSnap.exists()) {
             setRecyclerProfile({ ...rSnap.data(), recyclerId: fbUser.uid } as RecyclerProfile);
+          } else {
+            setRecyclerProfile(createDefaultRecyclerProfile(fbUser.uid, user.name, user.email));
           }
         } else if (user.role === 'COLLECTOR') {
           const cSnap = await getDoc(doc(db, 'collectorProfiles', fbUser.uid));
           if (cSnap.exists()) {
             setCollectorProfile({ ...cSnap.data(), collectorId: fbUser.uid } as CollectorProfile);
+          } else {
+            setCollectorProfile(createDefaultCollectorProfile(fbUser.uid, user.name, user.email));
           }
         }
       } else {
@@ -64,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           displayName: fbUser.displayName || 'Demo User',
           createdAt: new Date().toISOString()
         });
+        setRecyclerProfile(createDefaultRecyclerProfile(fbUser.uid, fbUser.displayName || undefined, fbUser.email || undefined));
       }
     } catch (err) {
       console.warn('Could not query Firestore profiles (likely offline or demo credentials):', err);
@@ -75,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: fbUser.displayName || 'Demo User',
         createdAt: new Date().toISOString()
       });
+      setRecyclerProfile(prev => prev ?? createDefaultRecyclerProfile(fbUser.uid, fbUser.displayName || undefined, fbUser.email || undefined));
     }
   };
 
@@ -86,8 +127,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setDemoUser = (user: User, colProfile?: CollectorProfile, recProfile?: RecyclerProfile) => {
     setUserProfile(user);
-    if (colProfile) setCollectorProfile(colProfile);
-    if (recProfile) setRecyclerProfile(recProfile);
+    if (colProfile) {
+      setCollectorProfile(colProfile);
+    } else if (user.role === 'COLLECTOR') {
+      setCollectorProfile(createDefaultCollectorProfile(user.userId, user.name, user.email));
+    }
+    if (recProfile) {
+      setRecyclerProfile(recProfile);
+    } else if (user.role === 'RECYCLER') {
+      setRecyclerProfile(createDefaultRecyclerProfile(user.userId, user.name, user.email));
+    }
     localStorage.setItem('waste2worth:demo_user', JSON.stringify({ user, colProfile, recProfile }));
   };
 
@@ -113,8 +162,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(saved);
         if (parsed.user) {
           setUserProfile(parsed.user);
-          if (parsed.colProfile) setCollectorProfile(parsed.colProfile);
-          if (parsed.recProfile) setRecyclerProfile(parsed.recProfile);
+          if (parsed.colProfile) {
+            setCollectorProfile(parsed.colProfile);
+          } else if (parsed.user.role === 'COLLECTOR') {
+            setCollectorProfile(createDefaultCollectorProfile(parsed.user.userId, parsed.user.name, parsed.user.email));
+          }
+          if (parsed.recProfile) {
+            setRecyclerProfile(parsed.recProfile);
+          } else if (parsed.user.role === 'RECYCLER') {
+            setRecyclerProfile(createDefaultRecyclerProfile(parsed.user.userId, parsed.user.name, parsed.user.email));
+          }
           setLoading(false);
         }
       } catch {

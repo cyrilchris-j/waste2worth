@@ -1,34 +1,32 @@
-import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { PageLoading } from './components/ui';
 
 // ─── Auth ─────────────────────────────────────
-const Login = lazy(() => import('./pages/auth/Login'));
+import Login from './pages/auth/Login';
 
 // ─── Collector ────────────────────────────────
-const CollectorPortal = lazy(() => import('./pages/collector/CollectorPortal'));
+import CollectorPortal from './pages/collector/CollectorPortal';
 
 // ─── Recycler ────────────────────────────────
-const RecyclerRegister     = lazy(() => import('./pages/recycler/RecyclerRegister'));
-const VerificationStatus   = lazy(() => import('./pages/recycler/VerificationStatus'));
-const RecyclerDashboard    = lazy(() => import('./pages/recycler/RecyclerDashboard'));
-const RecyclerProfile      = lazy(() => import('./pages/recycler/RecyclerProfile'));
-const AvailableLots        = lazy(() => import('./pages/recycler/AvailableLots'));
-const LotDetail            = lazy(() => import('./pages/recycler/LotDetail'));
-const AcceptLot            = lazy(() => import('./pages/recycler/AcceptLot'));
-const MyTransactions       = lazy(() => import('./pages/recycler/MyTransactions'));
-const TransactionDetail    = lazy(() => import('./pages/recycler/TransactionDetail'));
-const ProcessingReportList = lazy(() => import('./pages/recycler/ProcessingReportList'));
-const ProcessingReport     = lazy(() => import('./pages/recycler/ProcessingReport'));
+import RecyclerRegister from './pages/recycler/RecyclerRegister';
+import VerificationStatus from './pages/recycler/VerificationStatus';
+import RecyclerDashboard from './pages/recycler/RecyclerDashboard';
+import RecyclerProfile from './pages/recycler/RecyclerProfile';
+import AvailableLots from './pages/recycler/AvailableLots';
+import LotDetail from './pages/recycler/LotDetail';
+import AcceptLot from './pages/recycler/AcceptLot';
+import MyTransactions from './pages/recycler/MyTransactions';
+import TransactionDetail from './pages/recycler/TransactionDetail';
+import ProcessingReportList from './pages/recycler/ProcessingReportList';
+import ProcessingReport from './pages/recycler/ProcessingReport';
 
 // ─── Admin & Platform Intelligence ────────────
-const AdminVerification    = lazy(() => import('./pages/admin/AdminVerification'));
-const PlatformControlRoom  = lazy(() => import('./pages/platform/PlatformControlRoom'));
+import AdminVerification from './pages/admin/AdminVerification';
+import PlatformControlRoom from './pages/platform/PlatformControlRoom';
 
 // ─── Public QR Trace ──────────────────────────
-const TracePage = lazy(() => import('./pages/TracePage').then(m => ({ default: m.TracePage })));
+import { TracePage } from './pages/TracePage';
 
 // ─── 404 Not Found ────────────────────────────
 function NotFound() {
@@ -53,8 +51,7 @@ function NotFound() {
 
 export default function App() {
   return (
-    <Suspense fallback={<PageLoading />}>
-      <Routes>
+    <Routes>
         {/* Public Routes */}
         <Route path="/"                  element={<Navigate to="/login" replace />} />
         <Route path="/login"             element={<Login />} />
@@ -137,6 +134,5 @@ export default function App() {
         {/* Catch-all 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </Suspense>
-  );
-}
+    );
+  }

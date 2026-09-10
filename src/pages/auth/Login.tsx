@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { loginUser } from '../../services/authService';
+import { loginUser, getUserProfile } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -11,12 +11,8 @@ export default function Login() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
-  const { role, setDemoUser }   = useAuth();
+  const { role, userProfile, setDemoUser, logout } = useAuth();
   const navigate                = useNavigate();
-
-  if (role === 'COLLECTOR') { navigate('/collector/dashboard', { replace: true }); return null; }
-  if (role === 'RECYCLER')  { navigate('/recycler/dashboard', { replace: true }); return null; }
-  if (role === 'ADMIN')     { navigate('/admin/verification', { replace: true }); return null; }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +22,12 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      await loginUser(email.trim(), password);
+      const cred = await loginUser(email.trim(), password);
+      const user = await getUserProfile(cred.user.uid);
       toast.success('Welcome back!');
+      if (user?.role === 'COLLECTOR') navigate('/collector/dashboard');
+      else if (user?.role === 'ADMIN') navigate('/admin/verification');
+      else navigate('/recycler/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed';
       if (msg.includes('wrong-password') || msg.includes('user-not-found') || msg.includes('invalid-credential')) {
@@ -128,6 +128,32 @@ export default function Login() {
           <h1 className="text-2xl font-bold text-white">Waste2Worth</h1>
           <p className="text-brand-200 text-sm mt-1">E-Waste Recycling & Traceability Platform</p>
         </div>
+
+        {/* Active Session Indicator */}
+        {role && (
+          <div className="mb-4 bg-white/95 backdrop-blur rounded-2xl p-4 shadow-lg border border-white/20 text-left">
+            <p className="text-xs text-gray-500 font-medium">Currently active</p>
+            <p className="text-sm font-bold text-gray-900 truncate">
+              {userProfile?.name || 'User'} <span className="text-xs text-brand-700 font-semibold">({role})</span>
+            </p>
+            <div className="flex gap-2 mt-3">
+              <Button
+                size="sm"
+                fullWidth
+                onClick={() => {
+                  if (role === 'COLLECTOR') navigate('/collector/dashboard');
+                  else if (role === 'RECYCLER') navigate('/recycler/dashboard');
+                  else if (role === 'ADMIN') navigate('/admin/verification');
+                }}
+              >
+                Go to Dashboard
+              </Button>
+              <Button size="sm" variant="outline" onClick={logout}>
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-6 space-y-5">

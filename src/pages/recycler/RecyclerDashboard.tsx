@@ -25,7 +25,10 @@ export default function RecyclerDashboard() {
   const isVerified = recyclerProfile?.verificationStatus === 'VERIFIED';
 
   useEffect(() => {
-    if (!recyclerProfile) return;
+    if (!recyclerProfile) {
+      setLoading(false);
+      return;
+    }
     const recyclerId = recyclerProfile.recyclerId;
 
     Promise.all([
