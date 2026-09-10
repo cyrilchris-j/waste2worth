@@ -5,6 +5,7 @@ import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { LoadingSpinner, EmptyState, LotStatusBadge, ErrorMessage } from '../../components/ui';
 import { getListedLots } from '../../services/lotService';
 import { E_WASTE_CATEGORIES } from '../../types';
+import { Lock, Search, PackageSearch, Check, AlertTriangle, MapPin, ChevronRight, ArrowRight } from 'lucide-react';
 import type { Lot, EWasteCategory, OverallCondition } from '../../types';
 
 type SortKey = 'newest' | 'price_asc' | 'price_desc' | 'weight_desc';
@@ -79,14 +80,15 @@ export default function AvailableLots() {
       <RecyclerLayout title="Available Lots">
         <div className="page-container">
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-3">
-            <p className="text-3xl">🔒</p>
+            <Lock size={40} className="text-amber-700 mx-auto" />
             <p className="font-semibold text-amber-800">Verification Required</p>
             <p className="text-sm text-amber-700">You must be a verified recycler to browse available lots.</p>
             <button
               onClick={() => navigate('/recycler/verification-status')}
-              className="text-sm text-brand-700 font-semibold underline"
+              className="text-sm text-brand-700 font-semibold underline inline-flex items-center gap-1"
             >
-              Check verification status →
+              <span>Check verification status</span>
+              <ArrowRight size={14} />
             </button>
           </div>
         </div>
@@ -99,7 +101,7 @@ export default function AvailableLots() {
       <div className="page-container">
         {/* Search */}
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
             type="search"
             placeholder="Search by Lot ID, category, city…"
@@ -172,7 +174,7 @@ export default function AvailableLots() {
         {loading && <LoadingSpinner label="Loading lots…" />}
         {!loading && error && <ErrorMessage message={error} onRetry={() => { setLoading(true); setError(''); }} />}
         {!loading && !error && filtered.length === 0 && (
-          <EmptyState icon="📭" title="No lots found" message="Try adjusting your filters or check back later." />
+          <EmptyState icon={<PackageSearch size={40} className="text-gray-400" />} title="No lots found" message="Try adjusting your filters or check back later." />
         )}
 
         {!loading && !error && filtered.map((lot) => (
@@ -203,7 +205,10 @@ export default function AvailableLots() {
               <span className="chip">{lot.quantity ?? 1} unit{lot.quantity !== 1 ? 's' : ''}</span>
               <span className="chip">{lot.estimatedWeightKg ?? lot.estimatedWeight ?? 0} kg</span>
               {(recyclerProfile?.acceptedCategories || []).includes(lot.category) && (
-                <span className="chip chip-green">✓ Compatible</span>
+                <span className="chip chip-green inline-flex items-center gap-1">
+                  <Check size={12} />
+                  <span>Compatible</span>
+                </span>
               )}
             </div>
 
@@ -212,19 +217,31 @@ export default function AvailableLots() {
               <div>
                 <p className="text-lg font-bold text-brand-700">{formatCurrency(lot.askingPrice)}</p>
                 {lot.priceStatus === 'WITHIN_RANGE' && (
-                  <p className="text-xs text-green-600">✓ Within reference range</p>
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <Check size={12} />
+                    <span>Within reference range</span>
+                  </p>
                 )}
                 {lot.priceStatus === 'ABOVE_RANGE' && (
-                  <p className="text-xs text-orange-600">⚠ Above reference range</p>
+                  <p className="text-xs text-orange-600 flex items-center gap-1">
+                    <AlertTriangle size={12} />
+                    <span>Above reference range</span>
+                  </p>
                 )}
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">📍 {lot.city}</p>
+                <p className="text-sm text-gray-500 flex items-center justify-end gap-1">
+                  <MapPin size={13} className="text-gray-400 shrink-0" />
+                  <span>{lot.city}</span>
+                </p>
                 <p className="text-xs text-gray-400">{lot.state}</p>
               </div>
             </div>
 
-            <p className="text-xs text-brand-700 font-medium text-right">View details →</p>
+            <p className="text-xs text-brand-700 font-medium text-right flex items-center justify-end gap-1">
+              <span>View details</span>
+              <ChevronRight size={14} />
+            </p>
           </div>
         ))}
       </div>

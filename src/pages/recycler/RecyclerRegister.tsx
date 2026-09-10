@@ -6,6 +6,7 @@ import { Button, Input, Textarea } from '../../components/ui';
 import { E_WASTE_CATEGORIES, PROCESSING_CAPABILITIES } from '../../types';
 import type { EWasteCategory, ProcessingCapability } from '../../types';
 import toast from 'react-hot-toast';
+import { User, Building2, FileCheck, Settings, ShieldCheck, ArrowLeft, type LucideIcon } from 'lucide-react';
 
 // ─────────────────────────────────────────────
 // STEP types
@@ -30,7 +31,7 @@ interface FormData {
   state: string;
   pincode: string;
 
-  // Authorization
+  // Authorization (MVP simulation)
   registrationNumber: string;
   authorizationBody: string;
   authorizationNumber: string;
@@ -47,12 +48,12 @@ interface FormData {
   platformTerms: boolean;
 }
 
-const STEPS: { id: Step; label: string; icon: string }[] = [
-  { id: 'account',       label: 'Account',       icon: '👤' },
-  { id: 'facility',      label: 'Facility',       icon: '🏭' },
-  { id: 'authorization', label: 'Authorization',  icon: '📄' },
-  { id: 'capabilities',  label: 'Capabilities',   icon: '⚙️' },
-  { id: 'terms',         label: 'Terms',          icon: '✅' },
+const STEPS: { id: Step; label: string; icon: LucideIcon }[] = [
+  { id: 'account',       label: 'Account',       icon: User },
+  { id: 'facility',      label: 'Facility',      icon: Building2 },
+  { id: 'authorization', label: 'Authorization', icon: FileCheck },
+  { id: 'capabilities',  label: 'Capabilities',  icon: Settings },
+  { id: 'terms',         label: 'Terms',         icon: ShieldCheck },
 ];
 
 export default function RecyclerRegister() {
@@ -197,7 +198,9 @@ export default function RecyclerRegister() {
       {/* Header */}
       <header className="bg-brand-700 text-white px-4 pt-8 pb-6">
         <div className="flex items-center gap-3 mb-4">
-          <Link to="/login" className="text-brand-200 text-xl">←</Link>
+          <Link to="/login" className="text-brand-200 hover:text-white transition-colors" aria-label="Back">
+            <ArrowLeft size={22} />
+          </Link>
           <div>
             <h1 className="text-xl font-bold">Recycler Registration</h1>
             <p className="text-brand-200 text-sm">Step {stepIdx + 1} of {STEPS.length}</p>
@@ -222,7 +225,9 @@ export default function RecyclerRegister() {
         {step === 'account' && (
           <div className="space-y-4">
             <div className="text-center mb-2">
-              <span className="text-3xl">👤</span>
+              <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-2">
+                <User size={24} />
+              </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1">Account Details</h2>
             </div>
             <Input label="Full name" id="reg-name" value={form.name} onChange={set('name')} error={errors.name} placeholder="Your full name" required />
@@ -237,7 +242,9 @@ export default function RecyclerRegister() {
         {step === 'facility' && (
           <div className="space-y-4">
             <div className="text-center mb-2">
-              <span className="text-3xl">🏭</span>
+              <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-2">
+                <Building2 size={24} />
+              </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1">Facility Details</h2>
             </div>
             <Input label="Company / Organization name" id="reg-company" value={form.companyName} onChange={set('companyName')} error={errors.companyName} required />
@@ -256,7 +263,9 @@ export default function RecyclerRegister() {
         {step === 'authorization' && (
           <div className="space-y-4">
             <div className="text-center mb-2">
-              <span className="text-3xl">📄</span>
+              <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-2">
+                <FileCheck size={24} />
+              </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1">Authorization Details</h2>
               <p className="text-xs text-gray-500 mt-1">
                 Your authorization/registration information will be reviewed by our platform team.
@@ -275,7 +284,9 @@ export default function RecyclerRegister() {
         {step === 'capabilities' && (
           <div className="space-y-5">
             <div className="text-center mb-2">
-              <span className="text-3xl">⚙️</span>
+              <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-2">
+                <Settings size={24} />
+              </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1">Processing Capabilities</h2>
             </div>
 
@@ -343,7 +354,9 @@ export default function RecyclerRegister() {
         {step === 'terms' && (
           <div className="space-y-5">
             <div className="text-center mb-2">
-              <span className="text-3xl">✅</span>
+              <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-2">
+                <ShieldCheck size={24} />
+              </div>
               <h2 className="text-lg font-bold text-gray-900 mt-1">Terms & Conditions</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Please read and accept all terms before registering.

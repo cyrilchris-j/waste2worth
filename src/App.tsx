@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageLoading } from './components/ui';
 
@@ -33,7 +34,9 @@ const TracePage = lazy(() => import('./pages/TracePage').then(m => ({ default: m
 function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center bg-gray-50">
-      <span className="text-5xl">🔍</span>
+      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <Search size={32} />
+      </div>
       <h1 className="text-2xl font-bold text-gray-800">Page Not Found</h1>
       <p className="text-gray-500">This page doesn't exist or you don't have access.</p>
       <div className="flex gap-3 mt-2">

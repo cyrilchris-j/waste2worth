@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getRecyclerTransactions } from '../../services/transactionService';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { TransactionStatusBadge, LoadingSpinner, EmptyState, ErrorMessage } from '../../components/ui';
+import { ArrowLeftRight, FileText, ChevronRight } from 'lucide-react';
 import type { Transaction, TransactionStatus } from '../../types';
 
 const STATUS_FILTERS: Array<{ value: TransactionStatus | 'ALL'; label: string }> = [
@@ -68,7 +69,7 @@ export default function MyTransactions() {
         {loading && <LoadingSpinner label="Loading transactions…" />}
         {!loading && error && <ErrorMessage message={error} onRetry={() => window.location.reload()} />}
         {!loading && !error && filtered.length === 0 && (
-          <EmptyState icon="🔄" title="No transactions" message="Accepted lots will appear here as transactions." />
+          <EmptyState icon={<ArrowLeftRight size={40} className="text-gray-400" />} title="No transactions" message="Accepted lots will appear here as transactions." />
         )}
 
         {!loading && !error && filtered.map((txn) => (
@@ -96,11 +97,14 @@ export default function MyTransactions() {
                   {txn.paymentStatus}
                 </p>
               </div>
-              <span className="text-gray-300 text-lg">›</span>
+              <ChevronRight size={18} className="text-gray-300" />
             </div>
 
             {txn.status === 'REPORT_PENDING' && (
-              <p className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-lg inline-block">📋 Processing report required</p>
+              <p className="text-xs text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5">
+                <FileText size={13} className="text-amber-600" />
+                <span>Processing report required</span>
+              </p>
             )}
           </button>
         ))}

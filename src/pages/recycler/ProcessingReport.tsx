@@ -8,6 +8,7 @@ import { Button, Input, Textarea, Select, LoadingSpinner, ErrorMessage } from '.
 import { PROCESSING_CAPABILITIES, RECOVERED_MATERIALS } from '../../types';
 import type { Transaction, ProcessingReport as PR, RecoveredMaterialEntry, Evidence } from '../../types';
 import toast from 'react-hot-toast';
+import { CheckCircle2, Trash2, Camera } from 'lucide-react';
 
 interface RecoveredRow {
   material: string;
@@ -136,7 +137,10 @@ export default function ProcessingReport() {
       <RecyclerLayout title="Processing Report" backPath="/recycler/reports">
         <div className="page-container">
           <div className="section-card bg-green-50 border-green-200 space-y-3">
-            <p className="text-xl font-bold text-green-800">✅ Report Submitted</p>
+            <p className="text-xl font-bold text-green-800 flex items-center gap-2">
+              <CheckCircle2 size={24} className="text-green-600 shrink-0" />
+              <span>Report Submitted</span>
+            </p>
             <p className="text-xs font-mono text-gray-500">{existingReport.processingReportId}</p>
           </div>
           <div className="section-card space-y-0">
@@ -252,7 +256,14 @@ export default function ProcessingReport() {
                 />
               </div>
               {recoveredRows.length > 1 && (
-                <button onClick={() => removeRecoveredRow(i)} className="text-red-400 pb-3 text-lg shrink-0">✕</button>
+                <button
+                  type="button"
+                  onClick={() => removeRecoveredRow(i)}
+                  className="text-red-400 hover:text-red-600 pb-3 shrink-0 transition-colors"
+                  aria-label="Remove material row"
+                >
+                  <Trash2 size={18} />
+                </button>
               )}
             </div>
           ))}
@@ -277,7 +288,10 @@ export default function ProcessingReport() {
             onClick={() => fileRef.current?.click()}
             loading={uploadingEvidence}
           >
-            📷 Upload Evidence Photos
+            <span className="flex items-center justify-center gap-2">
+              <Camera size={18} />
+              <span>Upload Evidence Photos</span>
+            </span>
           </Button>
 
           {pendingEvidence.length > 0 && (

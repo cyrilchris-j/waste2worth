@@ -5,6 +5,7 @@ import { getLotById } from '../../services/lotService';
 import { transactionExistsForLot } from '../../services/transactionService';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, LotStatusBadge, LoadingSpinner, ErrorMessage } from '../../components/ui';
+import { Check, CheckCircle2, AlertTriangle, ShieldAlert, ArrowRight, X } from 'lucide-react';
 import type { Lot } from '../../types';
 
 function formatCurrency(n: number) {
@@ -58,15 +59,24 @@ export default function LotDetail() {
         {/* Already accepted banner */}
         {alreadyAccepted && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-            <p className="text-sm font-semibold text-blue-800">✓ You have already accepted this lot</p>
-            <button onClick={() => navigate('/recycler/transactions')} className="text-xs text-brand-700 underline mt-1">View in My Transactions →</button>
+            <p className="text-sm font-semibold text-blue-800 flex items-center gap-1.5">
+              <CheckCircle2 size={16} className="text-blue-600 shrink-0" />
+              <span>You have already accepted this lot</span>
+            </p>
+            <button onClick={() => navigate('/recycler/transactions')} className="text-xs text-brand-700 underline mt-1 inline-flex items-center gap-1">
+              <span>View in My Transactions</span>
+              <ArrowRight size={12} />
+            </button>
           </div>
         )}
 
         {/* Incompatible warning */}
         {!isCompatible && (
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
-            <p className="text-sm text-orange-800">⚠ This category is not in your accepted materials list. Update your profile to accept it.</p>
+            <p className="text-sm text-orange-800 flex items-start gap-1.5">
+              <AlertTriangle size={16} className="text-orange-600 shrink-0 mt-0.5" />
+              <span>This category is not in your accepted materials list. Update your profile to accept it.</span>
+            </p>
           </div>
         )}
 
@@ -114,8 +124,18 @@ export default function LotDetail() {
                 <p className="text-sm font-semibold text-gray-700">
                   {formatCurrency(lot.platformReferenceMin ?? 0)} – {formatCurrency(lot.platformReferenceMax ?? 0)}
                 </p>
-                <p className={`text-xs mt-0.5 ${lot.priceStatus === 'WITHIN_RANGE' ? 'text-green-600' : 'text-orange-600'}`}>
-                  {lot.priceStatus === 'WITHIN_RANGE' ? '✓ Within range' : lot.priceStatus === 'ABOVE_RANGE' ? '⚠ Above range' : '⚠ Below range'}
+                <p className={`text-xs mt-0.5 flex items-center justify-end gap-1 ${lot.priceStatus === 'WITHIN_RANGE' ? 'text-green-600' : 'text-orange-600'}`}>
+                  {lot.priceStatus === 'WITHIN_RANGE' ? (
+                    <>
+                      <Check size={12} />
+                      <span>Within range</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle size={12} />
+                      <span>{lot.priceStatus === 'ABOVE_RANGE' ? 'Above range' : 'Below range'}</span>
+                    </>
+                  )}
                 </p>
               </div>
             )}
@@ -158,11 +178,17 @@ export default function LotDetail() {
 
               {!evidenceViewed && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                  <p className="text-xs text-amber-800">⚠ Please review the evidence photos before accepting this lot.</p>
+                  <p className="text-xs text-amber-800 flex items-center gap-1.5">
+                    <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+                    <span>Please review the evidence photos before accepting this lot.</span>
+                  </p>
                 </div>
               )}
               {evidenceViewed && (
-                <p className="text-xs text-green-600">✓ Evidence reviewed</p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <Check size={14} className="text-green-600" />
+                  <span>Evidence reviewed</span>
+                </p>
               )}
             </>
           )}
@@ -170,7 +196,10 @@ export default function LotDetail() {
 
         {/* Safety notice */}
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-1">
-          <p className="text-sm font-semibold text-red-800">⚠ Safety & Compliance</p>
+          <p className="text-sm font-semibold text-red-800 flex items-center gap-1.5">
+            <ShieldAlert size={16} className="text-red-700 shrink-0" />
+            <span>Safety & Compliance</span>
+          </p>
           <p className="text-xs text-red-700">
             Ensure your facility is authorized to handle this category of e-waste.
             Batteries, CRTs, and PCBs require special handling. Comply with applicable pollution control board requirements.
@@ -207,7 +236,13 @@ export default function LotDetail() {
           onClick={() => setSelectedImage(null)}
         >
           <img src={selectedImage} alt="Evidence" className="max-w-full max-h-full rounded-2xl object-contain" />
-          <button className="absolute top-4 right-4 text-white text-2xl" onClick={() => setSelectedImage(null)}>✕</button>
+          <button
+            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white rounded-full bg-black/40 hover:bg-black/60 transition-colors"
+            onClick={() => setSelectedImage(null)}
+            aria-label="Close image"
+          >
+            <X size={24} />
+          </button>
         </div>
       )}
     </RecyclerLayout>

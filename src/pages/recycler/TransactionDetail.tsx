@@ -8,20 +8,32 @@ import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, TransactionStatusBadge, LoadingSpinner, ErrorMessage } from '../../components/ui';
 import type { Transaction, Lot, ProcessingReport } from '../../types';
 import toast from 'react-hot-toast';
+import {
+  FileText,
+  CreditCard,
+  CheckCircle2,
+  Truck,
+  PackageCheck,
+  Cpu,
+  ClipboardList,
+  Award,
+  Check,
+  type LucideIcon
+} from 'lucide-react';
 
 function formatCurrency(n: number) {
   return `₹${n.toLocaleString('en-IN')}`;
 }
 
-const TIMELINE: Array<{ status: string; label: string; icon: string }> = [
-  { status: 'CREATED',          label: 'Transaction Created',  icon: '📋' },
-  { status: 'PAYMENT_PENDING',  label: 'Payment Pending',      icon: '💳' },
-  { status: 'PAID',             label: 'Payment Confirmed',    icon: '✅' },
-  { status: 'HANDOVER_PENDING', label: 'Handover Scheduled',   icon: '🚚' },
-  { status: 'RECEIVED',         label: 'Material Received',    icon: '📦' },
-  { status: 'PROCESSING',       label: 'Processing',           icon: '⚙️' },
-  { status: 'REPORT_PENDING',   label: 'Report Pending',       icon: '📝' },
-  { status: 'COMPLETED',        label: 'Completed',            icon: '🎉' },
+const TIMELINE: Array<{ status: string; label: string; icon: LucideIcon }> = [
+  { status: 'CREATED',          label: 'Transaction Created',  icon: FileText },
+  { status: 'PAYMENT_PENDING',  label: 'Payment Pending',      icon: CreditCard },
+  { status: 'PAID',             label: 'Payment Confirmed',    icon: CheckCircle2 },
+  { status: 'HANDOVER_PENDING', label: 'Handover Scheduled',   icon: Truck },
+  { status: 'RECEIVED',         label: 'Material Received',    icon: PackageCheck },
+  { status: 'PROCESSING',       label: 'Processing',           icon: Cpu },
+  { status: 'REPORT_PENDING',   label: 'Report Pending',       icon: ClipboardList },
+  { status: 'COMPLETED',        label: 'Completed',            icon: Award },
 ];
 
 const STATUS_ORDER = TIMELINE.map((t) => t.status);
@@ -99,7 +111,7 @@ export default function TransactionDetail() {
         <div className="section-card">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Transaction Timeline</h3>
           <div className="space-y-3">
-            {TIMELINE.map(({ status, label, icon }, idx) => {
+            {TIMELINE.map(({ status, label, icon: Icon }, idx) => {
               const done    = idx < currentStep;
               const current = idx === currentStep;
               const future  = idx > currentStep;
@@ -111,7 +123,7 @@ export default function TransactionDetail() {
                     current ? 'bg-brand-100 border-2 border-brand-600 text-brand-700' : '',
                     future  ? 'bg-gray-100 text-gray-400' : '',
                   ].join(' ')}>
-                    {done ? '✓' : icon}
+                    {done ? <Check size={16} /> : <Icon size={16} />}
                   </div>
                   <div className="pt-1">
                     <p className={`text-sm font-medium ${future ? 'text-gray-400' : 'text-gray-900'}`}>{label}</p>
@@ -188,7 +200,10 @@ export default function TransactionDetail() {
         {/* Simulate payment (hackathon MVP) */}
         {txn.status === 'CREATED' && (
           <div className="section-card bg-blue-50 border-blue-200">
-            <p className="text-sm font-semibold text-blue-800 mb-2">💳 Payment (Simulated)</p>
+            <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+              <CreditCard size={16} />
+              <span>Payment (Simulated)</span>
+            </p>
             <p className="text-xs text-blue-600 mb-3">For the hackathon MVP, payment is simulated. In production, a secure payment gateway would be integrated.</p>
             <Button variant="secondary" fullWidth onClick={handleSimulatePayment}>
               Simulate Payment Confirmation
@@ -199,7 +214,10 @@ export default function TransactionDetail() {
         {/* Confirm receipt */}
         {txn.status === 'PAID' && (
           <div className="section-card space-y-3">
-            <p className="text-sm font-semibold text-gray-800">📦 Confirm Material Receipt</p>
+            <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+              <PackageCheck size={16} />
+              <span>Confirm Material Receipt</span>
+            </p>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -218,13 +236,19 @@ export default function TransactionDetail() {
         {/* Submit processing report */}
         {(txn.status === 'RECEIVED' || txn.status === 'PROCESSING') && !report && (
           <Button fullWidth size="lg" onClick={() => navigate(`/recycler/reports/new/${txn.transactionId}`)}>
-            📋 Submit Processing Report
+            <span className="flex items-center justify-center gap-2">
+              <FileText size={18} />
+              <span>Submit Processing Report</span>
+            </span>
           </Button>
         )}
 
         {report && (
           <div className="section-card bg-green-50 border-green-200">
-            <p className="text-sm font-semibold text-green-800">📋 Processing Report Submitted</p>
+            <p className="text-sm font-semibold text-green-800 flex items-center gap-1.5">
+              <CheckCircle2 size={16} />
+              <span>Processing Report Submitted</span>
+            </p>
             <p className="text-xs text-green-700 mt-1">Report ID: {report.processingReportId}</p>
             <p className="text-xs text-green-700">Status: {report.status}</p>
           </div>

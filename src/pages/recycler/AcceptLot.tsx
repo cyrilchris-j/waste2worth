@@ -8,6 +8,7 @@ import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, LoadingSpinner, ErrorMessage } from '../../components/ui';
 import type { Lot } from '../../types';
 import toast from 'react-hot-toast';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const TERMS = [
   { id: 'reviewed_description',   label: 'I have reviewed the complete material description and declared condition.' },
@@ -103,7 +104,7 @@ export default function AcceptLot() {
       <RecyclerLayout title="Accept Lot" backPath={`/recycler/lots/${lotId}`}>
         <div className="page-container">
           <div className="section-card text-center space-y-3">
-            <p className="text-3xl">✅</p>
+            <CheckCircle2 size={44} className="text-emerald-600 mx-auto" />
             <p className="font-semibold text-gray-800">Already Accepted</p>
             <p className="text-sm text-gray-500">A transaction already exists for this lot.</p>
             <Button onClick={() => navigate('/recycler/transactions')}>View My Transactions</Button>
@@ -129,64 +130,47 @@ export default function AcceptLot() {
       <div className="page-container">
         {/* Lot summary */}
         <div className="section-card space-y-2">
-          <h2 className="text-base font-bold text-gray-900">Lot Summary</h2>
-          <p className="text-xs font-mono text-gray-400">{lot.lotId}</p>
-          {[
-            { label: 'Category',  value: String(lot.category) },
-            {
-              label: 'Condition',
-              value: typeof lot.condition === 'string'
-                ? lot.condition
-                : typeof lot.conditionAssessment === 'string'
-                  ? lot.conditionAssessment
-                  : (lot.conditionAssessment?.working || 'Fair')
-            },
-            { label: 'Quantity',  value: `${lot.quantity ?? 1} unit${lot.quantity !== 1 ? 's' : ''}` },
-            { label: 'Weight',    value: `${lot.estimatedWeightKg ?? lot.estimatedWeight ?? 0} kg` },
-            { label: 'Location',  value: lot.location || `${lot.city || ''}, ${lot.state || ''}` || 'India' },
-          ].map(({ label, value }) => (
-            <div key={label} className="info-row">
-              <span className="info-label">{label}</span>
-              <span className="info-value">{value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Price breakdown */}
-        <div className="section-card space-y-2">
-          <h2 className="text-base font-bold text-gray-900">Price Breakdown</h2>
-          <div className="info-row"><span className="info-label">E-Waste Value</span><span className="info-value font-semibold">{formatCurrency(lot.askingPrice)}</span></div>
-          <div className="info-row"><span className="info-label">Delivery / Pickup</span><span className="info-value">₹0 <span className="text-xs text-gray-400">(TBD)</span></span></div>
-          <div className="info-row"><span className="info-label">Platform Fee (2%)</span><span className="info-value">{formatCurrency(platformFee)}</span></div>
-          <div className="border-t border-gray-100 pt-2">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-gray-900">Total</span>
-              <span className="text-lg font-bold text-brand-700">{formatCurrency(total)}</span>
-            </div>
+          <p className="text-xs text-gray-400 font-mono">{lot.lotId}</p>
+          <h2 className="text-lg font-bold text-gray-900">{lot.category}</h2>
+          {lot.brand && <p className="text-sm text-gray-500">{lot.brand} {lot.model}</p>}
+          <div className="flex gap-2 pt-1">
+            <span className="chip">{lot.estimatedWeightKg ?? lot.estimatedWeight ?? 0} kg</span>
+            <span className="chip">{lot.quantity ?? 1} unit{lot.quantity !== 1 ? 's' : ''}</span>
+            <span className="chip">{lot.city}</span>
           </div>
         </div>
 
-        {/* Mandatory T&C */}
+        {/* Pricing breakdown */}
         <div className="section-card space-y-3">
-          <h2 className="text-base font-bold text-gray-900">Terms & Acceptance</h2>
-          <p className="text-xs text-gray-500">
-            You must accept all terms below before the transaction is created.
-            These confirmations are recorded with your identity and timestamp.
-          </p>
+          <h3 className="text-sm font-semibold text-gray-700">Financial Summary</h3>
+          <div className="space-y-2 text-sm">
+            <div className="info-row">
+              <span className="info-label">Material Asking Price</span>
+              <span className="info-value font-semibold">{formatCurrency(lot.askingPrice)}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Platform Fee (2% simulated)</span>
+              <span className="info-value text-gray-500">{formatCurrency(platformFee)}</span>
+            </div>
+            <div className="border-t border-gray-100 pt-2 flex justify-between font-bold text-base">
+              <span>Total Commitment</span>
+              <span className="text-brand-700">{formatCurrency(total)}</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400">Payment is simulated in this MVP. Escrow terms apply upon payment.</p>
+        </div>
 
-          <div className="space-y-3">
+        {/* Compliance declarations */}
+        <div className="section-card space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700">Recycler Declarations</h3>
+          <p className="text-xs text-gray-500">You must agree to all conditions below before proceeding.</p>
+
+          <div className="space-y-3 pt-1">
             {TERMS.map(({ id, label }) => (
-              <label
-                key={id}
-                className={[
-                  'flex gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors',
-                  accepted[id] ? 'border-brand-400 bg-brand-50' : 'border-gray-200 bg-white',
-                ].join(' ')}
-              >
+              <label key={id} className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
-                  id={`term-${id}`}
-                  checked={accepted[id]}
+                  checked={Boolean(accepted[id])}
                   onChange={() => toggle(id)}
                   className="mt-0.5 shrink-0 w-5 h-5 accent-brand-600"
                 />
@@ -196,9 +180,12 @@ export default function AcceptLot() {
           </div>
 
           {!allAccepted && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
-              ⚠ All {TERMS.length} boxes must be checked before you can accept.
-              {Object.values(accepted).filter(Boolean).length}/{TERMS.length} accepted.
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-1.5">
+              <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+              <span>
+                All {TERMS.length} boxes must be checked before you can accept.
+                {Object.values(accepted).filter(Boolean).length}/{TERMS.length} accepted.
+              </span>
             </p>
           )}
         </div>

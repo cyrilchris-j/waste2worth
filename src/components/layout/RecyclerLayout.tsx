@@ -3,13 +3,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { logoutUser } from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { LayoutDashboard, Package, ArrowLeftRight, FileText, User, ArrowLeft } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { path: '/recycler/dashboard',    label: 'Dashboard', icon: '🏠' },
-  { path: '/recycler/lots',         label: 'Lots',      icon: '📦' },
-  { path: '/recycler/transactions', label: 'Trades',    icon: '🔄' },
-  { path: '/recycler/reports',      label: 'Reports',   icon: '📋' },
-  { path: '/recycler/profile',      label: 'Profile',   icon: '👤' },
+  { path: '/recycler/dashboard',    label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/recycler/lots',         label: 'Lots',      icon: Package },
+  { path: '/recycler/transactions', label: 'Trades',    icon: ArrowLeftRight },
+  { path: '/recycler/reports',      label: 'Reports',   icon: FileText },
+  { path: '/recycler/profile',      label: 'Profile',   icon: User },
 ];
 
 interface RecyclerLayoutProps {
@@ -35,8 +36,8 @@ export function RecyclerLayout({ children, title, backPath }: RecyclerLayoutProp
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
         <div className="flex items-center px-4 h-14 gap-3">
           {backPath && (
-            <Link to={backPath} className="p-1 -ml-1 text-gray-600 text-xl" aria-label="Back">
-              ←
+            <Link to={backPath} className="p-1 -ml-1 text-gray-600 hover:text-gray-900 transition-colors" aria-label="Back">
+              <ArrowLeft size={20} />
             </Link>
           )}
           <div className="flex-1 min-w-0">
@@ -67,6 +68,7 @@ export function RecyclerLayout({ children, title, backPath }: RecyclerLayoutProp
         <ul className="flex">
           {NAV_ITEMS.map((item) => {
             const active = location.pathname.startsWith(item.path);
+            const Icon = item.icon;
             return (
               <li key={item.path} className="flex-1">
                 <Link
@@ -77,7 +79,7 @@ export function RecyclerLayout({ children, title, backPath }: RecyclerLayoutProp
                   ].join(' ')}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <span className="text-xl leading-tight">{item.icon}</span>
+                  <Icon size={20} />
                   {item.label}
                 </Link>
               </li>

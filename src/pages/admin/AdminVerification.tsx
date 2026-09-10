@@ -6,6 +6,7 @@ import { adminSetVerificationStatus } from '../../services/recyclerService';
 import { VerificationBadge, LoadingSpinner, ErrorMessage, Button } from '../../components/ui';
 import type { RecyclerProfile, VerificationStatus } from '../../types';
 import toast from 'react-hot-toast';
+import { ShieldAlert, ShieldCheck, ExternalLink } from 'lucide-react';
 
 const NEXT_STATUS: Record<string, VerificationStatus[]> = {
   PENDING:      ['UNDER_REVIEW', 'REJECTED'],
@@ -38,7 +39,7 @@ export default function AdminVerification() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
         <div className="space-y-3">
-          <p className="text-3xl">🚫</p>
+          <ShieldAlert size={48} className="text-red-500 mx-auto" />
           <p className="font-bold text-gray-800">Access Denied</p>
           <p className="text-sm text-gray-500">This page is restricted to platform administrators.</p>
         </div>
@@ -72,7 +73,7 @@ export default function AdminVerification() {
       <header className="bg-gray-900 text-white px-4 pt-8 pb-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🛡️</span>
+            <ShieldCheck size={28} className="text-emerald-400 shrink-0" />
             <div>
               <h1 className="text-xl font-bold">Admin — Recycler Verification</h1>
               <p className="text-gray-400 text-sm">Platform administration panel</p>
@@ -81,9 +82,10 @@ export default function AdminVerification() {
           <div className="flex gap-2">
             <a
               href="/admin/intelligence"
-              className="px-3 py-1.5 text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center gap-1.5"
             >
-              Control Room ↗
+              <span>Control Room</span>
+              <ExternalLink size={13} />
             </a>
           </div>
         </div>

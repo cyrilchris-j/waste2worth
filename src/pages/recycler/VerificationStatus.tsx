@@ -1,10 +1,11 @@
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui';
+import { Clock, Search, CheckCircle2, XCircle, ArrowLeft, ArrowRight, Info, type LucideIcon } from 'lucide-react';
 import type { VerificationStatus as VS } from '../../types';
 
 const STATUS_CONFIG: Record<VS, {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   color: string;
   bgColor: string;
@@ -13,7 +14,7 @@ const STATUS_CONFIG: Record<VS, {
   nextStep: string | null;
 }> = {
   PENDING: {
-    icon: '⏳',
+    icon: Clock,
     title: 'Registration Submitted',
     color: 'text-yellow-800',
     bgColor: 'bg-yellow-50',
@@ -22,7 +23,7 @@ const STATUS_CONFIG: Record<VS, {
     nextStep: 'You will be notified once your profile moves to review. This typically takes 1–2 business days.',
   },
   UNDER_REVIEW: {
-    icon: '🔍',
+    icon: Search,
     title: 'Under Review',
     color: 'text-blue-800',
     bgColor: 'bg-blue-50',
@@ -31,7 +32,7 @@ const STATUS_CONFIG: Record<VS, {
     nextStep: 'No action needed. You will be notified of the outcome.',
   },
   VERIFIED: {
-    icon: '✅',
+    icon: CheckCircle2,
     title: 'Verified Recycler',
     color: 'text-green-800',
     bgColor: 'bg-green-50',
@@ -40,7 +41,7 @@ const STATUS_CONFIG: Record<VS, {
     nextStep: null,
   },
   REJECTED: {
-    icon: '❌',
+    icon: XCircle,
     title: 'Verification Rejected',
     color: 'text-red-800',
     bgColor: 'bg-red-50',
@@ -56,12 +57,16 @@ export default function VerificationStatus() {
   const status: VS = ((recyclerProfile?.verificationStatus as VS) ?? (userProfile?.verificationStatus as VS) ?? 'PENDING');
   const config = STATUS_CONFIG[status] || STATUS_CONFIG['PENDING'];
 
+  const StatusIcon = config.icon;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-md mx-auto">
       {/* Header */}
       <header className="bg-brand-700 text-white px-4 pt-8 pb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/recycler/dashboard')} className="text-brand-200 text-xl" aria-label="Back">←</button>
+          <button onClick={() => navigate('/recycler/dashboard')} className="text-brand-200 hover:text-white transition-colors" aria-label="Back">
+            <ArrowLeft size={22} />
+          </button>
           <div>
             <h1 className="text-xl font-bold">Verification Status</h1>
             <p className="text-brand-200 text-sm">Waste2Worth Recycler Portal</p>
@@ -72,17 +77,24 @@ export default function VerificationStatus() {
       <main className="flex-1 px-4 py-6 space-y-5">
         {/* Status Card */}
         <div className={`rounded-2xl border p-6 ${config.bgColor} ${config.borderColor} text-center space-y-3`}>
-          <div className="text-5xl">{config.icon}</div>
+          <div className="flex justify-center">
+            <div className={`p-4 rounded-full bg-white shadow-sm ${config.color}`}>
+              <StatusIcon size={40} />
+            </div>
+          </div>
           <h2 className={`text-xl font-bold ${config.color}`}>{config.title}</h2>
           <p className={`text-sm ${config.color} opacity-90`}>{config.description}</p>
         </div>
 
         {/* MVP Disclaimer */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <p className="text-xs text-amber-800">
-            <strong>ℹ️ MVP Notice:</strong> Verification is performed manually by the platform team
-            for this prototype. This is not integrated with any government regulatory API.
-            Verified status is required to browse and accept e-waste lots.
+          <p className="text-xs text-amber-800 flex items-start gap-1.5">
+            <Info size={16} className="text-amber-700 shrink-0 mt-0.5" />
+            <span>
+              <strong>MVP Notice:</strong> Verification is performed manually by the platform team
+              for this prototype. This is not integrated with any government regulatory API.
+              Verified status is required to browse and accept e-waste lots.
+            </span>
           </p>
         </div>
 
@@ -124,7 +136,9 @@ export default function VerificationStatus() {
         {/* CTA */}
         {status === 'VERIFIED' && (
           <Button fullWidth onClick={() => navigate('/recycler/dashboard')}>
-            Go to Dashboard →
+            <span className="flex items-center justify-center gap-1.5">
+              Go to Dashboard <ArrowRight size={16} />
+            </span>
           </Button>
         )}
 

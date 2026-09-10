@@ -4,6 +4,7 @@ import { loginUser } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { Recycle, Package, Shield } from 'lucide-react';
 import type { User, CollectorProfile, RecyclerProfile } from '../../types';
 
 export default function Login() {
@@ -121,8 +122,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg">
-            ♻️
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-brand-600 mx-auto mb-3 shadow-lg">
+            <Recycle size={36} />
           </div>
           <h1 className="text-2xl font-bold text-white">Waste2Worth</h1>
           <p className="text-brand-200 text-sm mt-1">E-Waste Recycling & Traceability Platform</p>
@@ -167,25 +168,25 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => handleDemoLogin('COLLECTOR')}
-                className="py-2 px-2 text-xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors flex flex-col items-center justify-center text-center"
+                className="py-2.5 px-2 text-xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors flex flex-col items-center justify-center text-center gap-1"
               >
-                <span className="text-base mb-1">📦</span>
+                <Package size={18} className="text-amber-700" />
                 <span>Collector</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleDemoLogin('RECYCLER')}
-                className="py-2 px-2 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex flex-col items-center justify-center text-center"
+                className="py-2.5 px-2 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex flex-col items-center justify-center text-center gap-1"
               >
-                <span className="text-base mb-1">♻️</span>
+                <Recycle size={18} className="text-emerald-700" />
                 <span>Recycler</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleDemoLogin('ADMIN')}
-                className="py-2 px-2 text-xs font-medium text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex flex-col items-center justify-center text-center"
+                className="py-2.5 px-2 text-xs font-medium text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex flex-col items-center justify-center text-center gap-1"
               >
-                <span className="text-base mb-1">🛡️</span>
+                <Shield size={18} className="text-indigo-700" />
                 <span>Admin</span>
               </button>
             </div>

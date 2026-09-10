@@ -6,6 +6,7 @@ import { Card, VerificationBadge, LoadingSpinner, EmptyState } from '../../compo
 import { getListedLots } from '../../services/lotService';
 import { getRecyclerTransactions } from '../../services/transactionService';
 import { getProcessingReportsByRecycler } from '../../services/processingReportService';
+import { Package, ArrowLeftRight, FileText, User, ShieldCheck, AlertTriangle, ChevronRight, Inbox } from 'lucide-react';
 import type { Transaction } from '../../types';
 
 interface DashboardStats {
@@ -71,11 +72,17 @@ export default function RecyclerDashboard() {
             className="bg-amber-50 border border-amber-200 rounded-2xl p-4 cursor-pointer active:scale-[0.98] transition-transform"
             onClick={() => navigate('/recycler/verification-status')}
           >
-            <p className="text-sm font-semibold text-amber-800">⚠️ Verification Pending</p>
+            <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5">
+              <AlertTriangle size={18} className="text-amber-700 shrink-0" />
+              <span>Verification Pending</span>
+            </p>
             <p className="text-xs text-amber-700 mt-1">
               Your profile is awaiting verification. You will be able to browse and accept lots once verified.
             </p>
-            <p className="text-xs text-brand-700 mt-2 font-medium">View status →</p>
+            <p className="text-xs text-brand-700 mt-2 font-medium flex items-center gap-1">
+              <span>View status</span>
+              <ChevronRight size={14} />
+            </p>
           </div>
         )}
 
@@ -106,34 +113,39 @@ export default function RecyclerDashboard() {
           <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide px-1">Quick Actions</h3>
 
           {[
-            { icon: '📦', label: 'Browse Available Lots', sub: 'Find compatible e-waste to accept', path: '/recycler/lots', disabled: !isVerified },
-            { icon: '🔄', label: 'My Transactions',       sub: 'Track active and past transactions', path: '/recycler/transactions', disabled: false },
-            { icon: '📋', label: 'Processing Reports',    sub: 'Submit and view recycling reports',   path: '/recycler/reports',       disabled: false },
-            { icon: '👤', label: 'My Profile',            sub: 'View and update facility details',    path: '/recycler/profile',        disabled: false },
-            { icon: '🔍', label: 'Verification Status',   sub: 'Check authorization review status',   path: '/recycler/verification-status', disabled: false },
-          ].map((item) => (
-            <button
-              key={item.path}
-              onClick={() => !item.disabled && navigate(item.path)}
-              disabled={item.disabled}
-              className={[
-                'w-full flex items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-left',
-                'active:scale-[0.98] transition-transform',
-                item.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-brand-200',
-              ].join(' ')}
-            >
-              <span className="text-2xl shrink-0">{item.icon}</span>
-              <div className="min-w-0">
-                <p className="font-semibold text-gray-900 text-sm">{item.label}</p>
-                <p className="text-xs text-gray-500 truncate">{item.sub}</p>
-              </div>
-              <span className="ml-auto text-gray-300 text-lg shrink-0">›</span>
-            </button>
-          ))}
+            { icon: Package,        label: 'Browse Available Lots', sub: 'Find compatible e-waste to accept', path: '/recycler/lots', disabled: !isVerified },
+            { icon: ArrowLeftRight, label: 'My Transactions',       sub: 'Track active and past transactions', path: '/recycler/transactions', disabled: false },
+            { icon: FileText,       label: 'Processing Reports',    sub: 'Submit and view recycling reports',   path: '/recycler/reports',       disabled: false },
+            { icon: User,           label: 'My Profile',            sub: 'View and update facility details',    path: '/recycler/profile',        disabled: false },
+            { icon: ShieldCheck,    label: 'Verification Status',   sub: 'Check authorization review status',   path: '/recycler/verification-status', disabled: false },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.path}
+                onClick={() => !item.disabled && navigate(item.path)}
+                disabled={item.disabled}
+                className={[
+                  'w-full flex items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-left',
+                  'active:scale-[0.98] transition-transform',
+                  item.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-brand-200',
+                ].join(' ')}
+              >
+                <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center shrink-0">
+                  <Icon size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900 text-sm">{item.label}</p>
+                  <p className="text-xs text-gray-500 truncate">{item.sub}</p>
+                </div>
+                <ChevronRight size={18} className="text-gray-300 shrink-0" />
+              </button>
+            );
+          })}
         </div>
 
         {stats && stats.availableLots === 0 && isVerified && (
-          <EmptyState icon="📭" title="No compatible lots right now" message="New lots will appear here when collectors list e-waste matching your accepted categories." />
+          <EmptyState icon={<Inbox size={40} className="text-gray-400" />} title="No compatible lots right now" message="New lots will appear here when collectors list e-waste matching your accepted categories." />
         )}
       </div>
     </RecyclerLayout>

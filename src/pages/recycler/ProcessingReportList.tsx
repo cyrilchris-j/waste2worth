@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getProcessingReportsByRecycler } from '../../services/processingReportService';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { ReportStatusBadge, LoadingSpinner, EmptyState, ErrorMessage, Button } from '../../components/ui';
+import { FileText } from 'lucide-react';
 import type { ProcessingReport } from '../../types';
 
 export default function ProcessingReportList() {
@@ -29,7 +30,7 @@ export default function ProcessingReportList() {
         {!loading && error && <ErrorMessage message={error} onRetry={() => window.location.reload()} />}
         {!loading && !error && reports.length === 0 && (
           <EmptyState
-            icon="📋"
+            icon={<FileText size={40} className="text-gray-400" />}
             title="No processing reports yet"
             message="Reports are created after you confirm receipt of a lot and process it."
           />

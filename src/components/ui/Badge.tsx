@@ -38,7 +38,7 @@ export function VerificationBadge({ status }: { status: VerificationStatus | str
   const map: Record<string, { label: string; variant: BadgeVariant }> = {
     PENDING:      { label: 'Pending Review',  variant: 'yellow' },
     UNDER_REVIEW: { label: 'Under Review',    variant: 'blue'   },
-    VERIFIED:     { label: '✓ Verified',      variant: 'green'  },
+    VERIFIED:     { label: 'Verified',        variant: 'green'  },
     REJECTED:     { label: 'Rejected',        variant: 'red'    },
   };
   const item = map[status] || { label: String(status), variant: 'gray' };
@@ -58,7 +58,7 @@ export function LotStatusBadge({ status }: { status: LotStatus | string }) {
     RECEIVED:         { label: 'Received',         variant: 'blue'   },
     PROCESSING:       { label: 'Processing',       variant: 'purple' },
     REPORT_PENDING:   { label: 'Report Pending',   variant: 'yellow' },
-    COMPLETED:        { label: '✓ Completed',      variant: 'green'  },
+    COMPLETED:        { label: 'Completed',        variant: 'green'  },
     CANCELLED:        { label: 'Cancelled',        variant: 'red'    },
     REJECTED:         { label: 'Rejected',         variant: 'red'    },
     DISPUTED:         { label: 'Disputed',         variant: 'red'    },
@@ -77,7 +77,7 @@ export function TransactionStatusBadge({ status }: { status: TransactionStatus |
     RECEIVED:         { label: 'Received',         variant: 'blue'   },
     PROCESSING:       { label: 'Processing',       variant: 'purple' },
     REPORT_PENDING:   { label: 'Report Pending',   variant: 'yellow' },
-    COMPLETED:        { label: '✓ Completed',      variant: 'green'  },
+    COMPLETED:        { label: 'Completed',        variant: 'green'  },
     CANCELLED:        { label: 'Cancelled',        variant: 'red'    },
     DISPUTED:         { label: 'Disputed',         variant: 'red'    },
   };
@@ -91,8 +91,8 @@ export function ReportStatusBadge({ status }: { status: ProcessingReportStatus |
     SUBMITTED:      { label: 'Submitted',      variant: 'blue'   },
     REPORT_PENDING: { label: 'Report Pending', variant: 'yellow' },
     PROCESSING:     { label: 'Processing',     variant: 'blue'   },
-    VERIFIED:       { label: '✓ Verified',     variant: 'green'  },
-    COMPLETED:      { label: '✓ Completed',    variant: 'green'  },
+    VERIFIED:       { label: 'Verified',       variant: 'green'  },
+    COMPLETED:      { label: 'Completed',      variant: 'green'  },
     REJECTED:       { label: 'Rejected',       variant: 'red'    },
   };
   const item = map[status] || { label: String(status), variant: 'gray' };
