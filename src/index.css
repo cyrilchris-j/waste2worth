@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { font-family: Georgia, 'Times New Roman', serif; color: #14231d; background: #f7f4ed; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: #f7f4ed; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+.sans { font-family: 'Trebuchet MS', Arial, sans-serif; }
+.label { font-family: 'Trebuchet MS', Arial, sans-serif; font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.field { width: 100%; border: 1px solid #cbd8ce; border-radius: 10px; background: #fff; padding: .8rem .9rem; color: #14231d; outline: none; }
+.field:focus { border-color: #1f6f52; box-shadow: 0 0 0 3px rgba(31,111,82,.12); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 46px; border-radius: 10px; padding: .7rem 1rem; font-family: 'Trebuchet MS', Arial, sans-serif; font-size: .9rem; font-weight: 700; transition: transform .15s ease, background .15s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: #1f6f52; color: white; }
+.btn-primary:hover { background: #18583f; }
+.btn-secondary { border: 1px solid #b8cabe; background: #fff; color: #1f6f52; }
+.btn-danger { background: #fff1ed; color: #9e4325; }
+.card { border: 1px solid #dfe8e0; border-radius: 14px; background: rgba(255,255,255,.88); box-shadow: 0 10px 24px rgba(20,35,29,.05); }
+.pattern { background-image: radial-gradient(#b8cabe 1px, transparent 1px); background-size: 18px 18px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
