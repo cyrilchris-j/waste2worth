@@ -12,12 +12,16 @@ export function evaluatePrice(lot: Pick<Lot, 'category' | 'conditionAssessment' 
 }
 export function scoreRecycler(lot: Pick<Lot, 'category' | 'estimatedWeight' | 'location' | 'askingPrice'>, recycler: RecyclerProfile, referenceTotal: number): MatchResult {
   const material = recycler.acceptedMaterials.includes(lot.category) ? 30 : 0
-  const capability = recycler.processingCapabilities.length > 0 ? 20 : 0
+  const normalizedCategory = lot.category.toLowerCase()
+  const capability = recycler.processingCapabilities.some(item => {
+    const normalizedCapability = item.toLowerCase()
+    return normalizedCapability.includes(normalizedCategory) || (normalizedCategory === 'laptop' && /electronics|dismantling|component/.test(normalizedCapability)) || (normalizedCategory === 'battery' && /battery|isolation/.test(normalizedCapability)) || (normalizedCategory === 'pcb' && /board|material recovery/.test(normalizedCapability))
+  }) ? 20 : 0
   const capacity = recycler.capacity >= lot.estimatedWeight ? 15 : 5
   const location = recycler.location.split(',')[1]?.trim() === lot.location.split(',')[1]?.trim() ? 15 : 7
   const price = referenceTotal > 0 && lot.askingPrice <= referenceTotal * 1.25 ? 10 : 4
   const verification = recycler.verificationStatus === VerificationStatus.VERIFIED ? 10 : 0
-  const reasons = [material ? 'Material accepted' : 'Material needs review', capability ? 'Processing capability matched' : 'Capability not listed', capacity === 15 ? 'Capacity sufficient' : 'Capacity needs confirmation', location === 15 ? 'Location compatible' : 'Location may require logistics', price === 10 ? 'Price acceptable' : 'Price needs discussion', verification === 10 ? 'Platform verified' : 'Verification is not complete']
+  const reasons = [material ? 'Material accepted' : 'Material needs review', capability ? 'Processing capability matched' : 'Processing capability needs review', capacity === 15 ? 'Capacity sufficient' : 'Capacity needs confirmation', location === 15 ? 'Location compatible' : 'Location may require logistics', price === 10 ? 'Price acceptable' : 'Price needs discussion', verification === 10 ? 'Platform verified' : 'Verification is not complete']
   return { recycler, compatibilityScore: material + capability + capacity + location + price + verification, reasons }
 }
 export const allowedTransitions: Record<LotStatus, LotStatus[]> = {

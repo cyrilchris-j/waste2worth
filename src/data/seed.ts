@@ -12,10 +12,10 @@ export const recyclers: RecyclerProfile[] = [
   { recyclerId: 'recycler-ecoforge', facility: 'EcoForge Recovery', verificationStatus: VerificationStatus.VERIFIED, acceptedMaterials: ['Cable', 'PCB'], processingCapabilities: ['Material recovery'], capacity: 120, location: 'Coimbatore, Tamil Nadu' },
 ]
 export const auditLogs: AuditLog[] = [
-  { eventId: 'evt-1', lotId: demoLot.lotId, actorId: demoLot.collectorId, actorRole: UserRole.COLLECTOR, eventType: 'LOT_CREATED', timestamp: demoLot.createdAt },
-  { eventId: 'evt-2', lotId: demoLot.lotId, actorId: demoLot.collectorId, actorRole: UserRole.COLLECTOR, eventType: 'LOT_LISTED', timestamp: '2026-09-10T09:00:00Z' },
-  { eventId: 'evt-3', lotId: demoLot.lotId, actorId: 'platform-engine', actorRole: UserRole.ADMIN, eventType: 'PRICE_EVALUATED', timestamp: '2026-09-10T09:05:00Z' },
-  { eventId: 'evt-4', lotId: demoLot.lotId, actorId: 'platform-engine', actorRole: UserRole.ADMIN, eventType: 'MATCH_CREATED', timestamp: '2026-09-10T10:10:00Z' },
+  { eventId: 'evt-1', lotId: demoLot.lotId, transactionId: null, actorId: demoLot.collectorId, actorRole: UserRole.COLLECTOR, eventType: 'LOT_CREATED', timestamp: demoLot.createdAt },
+  { eventId: 'evt-2', lotId: demoLot.lotId, transactionId: null, actorId: demoLot.collectorId, actorRole: UserRole.COLLECTOR, eventType: 'LOT_LISTED', timestamp: '2026-09-10T09:00:00Z' },
+  { eventId: 'evt-3', lotId: demoLot.lotId, transactionId: 'TXN-2026-014', actorId: 'platform-engine', actorRole: UserRole.ADMIN, eventType: 'PRICE_EVALUATED', timestamp: '2026-09-10T09:05:00Z' },
+  { eventId: 'evt-4', lotId: demoLot.lotId, transactionId: 'TXN-2026-014', actorId: 'platform-engine', actorRole: UserRole.ADMIN, eventType: 'MATCH_CREATED', timestamp: '2026-09-10T10:10:00Z' },
 ]
 export const safetyGuides: SafetyGuide[] = [
   { title: 'Battery handling', category: 'Battery', icon: '🔋', instructions: ['Do not puncture, crush, or open batteries.', 'Tape exposed terminals before transport.', 'Keep batteries dry and separated.'], warnings: ['Stop handling swollen, hot, or leaking batteries.'] },
