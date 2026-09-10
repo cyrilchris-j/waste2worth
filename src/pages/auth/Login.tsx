@@ -187,32 +187,35 @@ export default function Login() {
 
           {/* Quick Demo Access Buttons */}
           <div className="border-t border-gray-100 pt-4 space-y-2">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide text-center mb-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center mb-2">
               Quick Demo Persona Access
             </p>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => handleDemoLogin('COLLECTOR')}
-                className="py-2.5 px-2 text-xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition-colors flex flex-col items-center justify-center text-center gap-1"
+                className="py-3 px-2 text-xs font-semibold text-gray-800 bg-gray-50 hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300 rounded-xl border border-gray-200 transition-all flex flex-col items-center justify-center text-center gap-1.5 active:scale-[0.98] min-h-[44px]"
+                aria-label="Login as Collector demo persona"
               >
-                <Package size={18} className="text-amber-700" />
+                <Package size={18} className="text-brand-600" />
                 <span>Collector</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleDemoLogin('RECYCLER')}
-                className="py-2.5 px-2 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors flex flex-col items-center justify-center text-center gap-1"
+                className="py-3 px-2 text-xs font-semibold text-gray-800 bg-gray-50 hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300 rounded-xl border border-gray-200 transition-all flex flex-col items-center justify-center text-center gap-1.5 active:scale-[0.98] min-h-[44px]"
+                aria-label="Login as Recycler demo persona"
               >
-                <Recycle size={18} className="text-emerald-700" />
+                <Recycle size={18} className="text-brand-600" />
                 <span>Recycler</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleDemoLogin('ADMIN')}
-                className="py-2.5 px-2 text-xs font-medium text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex flex-col items-center justify-center text-center gap-1"
+                className="py-3 px-2 text-xs font-semibold text-gray-800 bg-gray-50 hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300 rounded-xl border border-gray-200 transition-all flex flex-col items-center justify-center text-center gap-1.5 active:scale-[0.98] min-h-[44px]"
+                aria-label="Login as Admin demo persona"
               >
-                <Shield size={18} className="text-indigo-700" />
+                <Shield size={18} className="text-brand-600" />
                 <span>Admin</span>
               </button>
             </div>
