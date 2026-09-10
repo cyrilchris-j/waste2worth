@@ -27,4 +27,4 @@ export function scoreRecycler(lot: Pick<Lot, 'category' | 'estimatedWeight' | 'l
 export const allowedTransitions: Record<LotStatus, LotStatus[]> = {
   [LotStatus.DRAFT]: [LotStatus.LISTED, LotStatus.CANCELLED], [LotStatus.LISTED]: [LotStatus.MATCHED, LotStatus.CANCELLED], [LotStatus.MATCHED]: [LotStatus.ACCEPTED, LotStatus.CANCELLED, LotStatus.DISPUTED], [LotStatus.ACCEPTED]: [LotStatus.PAID, LotStatus.CANCELLED, LotStatus.DISPUTED], [LotStatus.PAID]: [LotStatus.HANDED_OVER, LotStatus.DISPUTED], [LotStatus.HANDED_OVER]: [LotStatus.RECEIVED, LotStatus.DISPUTED], [LotStatus.RECEIVED]: [LotStatus.PROCESSING, LotStatus.DISPUTED], [LotStatus.PROCESSING]: [LotStatus.COMPLETED, LotStatus.DISPUTED], [LotStatus.COMPLETED]: [], [LotStatus.CANCELLED]: [], [LotStatus.DISPUTED]: [LotStatus.ACCEPTED, LotStatus.CANCELLED],
 }
-export function canTransition(from: LotStatus, to: LotStatus) { return allowedTransitions[from].includes(to) }
+export function canTransition(from: LotStatus | string, to: LotStatus) { return (allowedTransitions[from as LotStatus] || []).includes(to) }
