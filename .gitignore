@@ -9,3 +9,6 @@ coverage/
 .firebase/
 .vscode/
 .idea/
+*serviceAccount*.json
+*credentials*.json
+service-account*.json

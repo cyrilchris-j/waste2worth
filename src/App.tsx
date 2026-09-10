@@ -1,15 +1,138 @@
-import { useMemo, useState } from 'react'
-import { Activity, ArrowRight, BarChart3, CircleHelp, ClipboardCheck, Languages, LayoutDashboard, Menu, PackageCheck, ShieldCheck, Sparkles, Truck, X } from 'lucide-react'
-import { AdminPanel } from './components/AdminPanel'
-import { MatchingList } from './components/MatchingList'
-import { PricePanel } from './components/PricePanel'
-import { QrTrace } from './components/QrTrace'
-import { SafetyLibrary } from './components/SafetyLibrary'
-import { TransactionTimeline } from './components/TransactionTimeline'
-import { auditLogs, demoLot, priceReferences, recyclers, safetyGuides } from './data/seed'
-import { translations, type Language } from './locales/translations'
-import { UserRole } from './types/domain'
-import { evaluatePrice, scoreRecycler } from './utils/engines'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
-const navItems = [{ label: 'Overview', icon: LayoutDashboard }, { label: 'Matching', icon: Sparkles }, { label: 'Transactions', icon: Activity }, { label: 'Safety', icon: CircleHelp }, { label: 'Admin', icon: ShieldCheck }]
-export default function App() { const [active, setActive] = useState('Overview'); const [language, setLanguage] = useState<Language>('en'); const [menuOpen, setMenuOpen] = useState(false); const t = translations[language]; const reference = priceReferences.find(item => item.category === demoLot.category) ?? priceReferences[0]; const evaluation = useMemo(() => evaluatePrice(demoLot, reference), [reference]); const matches = useMemo(() => recyclers.map(recycler => scoreRecycler(demoLot, recycler, evaluation.referencePrice)).sort((a, b) => b.compatibilityScore - a.compatibilityScore), [evaluation.referencePrice]); const nav = (label: string) => { setActive(label); setMenuOpen(false) }; return <div className="app-shell"><aside className={menuOpen ? 'sidebar open' : 'sidebar'}><div className="brand"><div className="brand-mark">W</div><div><b>Waste2Worth</b><span>Platform intelligence</span></div><button className="close-menu" onClick={() => setMenuOpen(false)}><X size={18} /></button></div><nav>{navItems.map(({ label, icon: Icon }) => <button className={active === label ? 'nav-item active' : 'nav-item'} key={label} onClick={() => nav(label)}><Icon size={18} />{label}{label === 'Matching' && <span className="nav-count">3</span>}</button>)}</nav><div className="sidebar-footer"><div className="safety-chip"><ShieldCheck size={17} /><span><b>Platform layer</b><small>Transaction-safe by design</small></span></div><div className="profile"><div className="avatar">P</div><span><b>Prasanna</b><small>Platform owner · {UserRole.ADMIN}</small></span></div></div></aside><main className="main"><header className="topbar"><button className="menu-button" onClick={() => setMenuOpen(true)}><Menu size={21} /></button><div className="crumb"><span>Workspace</span><ArrowRight size={14} /><b>{active}</b></div><div className="top-actions"><label className="language"><Languages size={16} /><select value={language} onChange={event => setLanguage(event.target.value as Language)} aria-label={t.language}><option value="en">EN</option><option value="ta">தமிழ்</option><option value="hi">हिन्दी</option></select></label><div className="status-dot"><span /> Demo environment</div></div></header><div className="content">{active === 'Overview' && <><section className="hero"><div><div className="eyebrow light">TRANSACTION CONTROL ROOM</div><h1>Turn material<br /><em>into momentum.</em></h1><p>{t.overview} One continuous record from listed lot to responsible processing.</p><div className="hero-actions"><button className="primary-button" onClick={() => nav('Matching')}>Explore matches <ArrowRight size={17} /></button><button className="text-button" onClick={() => nav('Transactions')}>Open timeline</button></div></div><div className="hero-orbit"><div className="orbit-center">₹<b>{demoLot.askingPrice.toLocaleString('en-IN')}</b><small>asking value</small></div><div className="orbit-line line-one" /><div className="orbit-line line-two" /><div className="orbit-tag tag-one"><PackageCheck size={15} /> Lot listed</div><div className="orbit-tag tag-two"><Truck size={15} /> Handover ready</div></div></section><div className="stats"><div><span>Active lot</span><strong>{demoLot.lotId}</strong><small>{demoLot.quantity} units · {demoLot.estimatedWeight} kg</small></div><div><span>Best compatibility</span><strong>{matches[0].compatibilityScore}%</strong><small>{matches[0].recycler.facility}</small></div><div><span>Lifecycle status</span><strong>{demoLot.status}</strong><small>Last updated 10:10 today</small></div><div><span>Trace events</span><strong>{auditLogs.length}</strong><small>Append-only audit trail</small></div></div><div className="two-column"><PricePanel evaluation={evaluation} /><QrTrace lotId={demoLot.lotId} transactionId="TXN-2026-014" /></div><section><div className="section-heading"><div><div className="eyebrow">MATCHING ENGINE</div><h2>Where this lot can go next.</h2></div><button className="text-button" onClick={() => nav('Matching')}>View all <ArrowRight size={15} /></button></div><MatchingList matches={matches.slice(0, 2)} /></section></>}{active === 'Matching' && <><div className="page-title"><div className="eyebrow">MATCHING ENGINE</div><h1>{t.matching}</h1><p>Weighted compatibility across material, capability, capacity, location, price, and platform verification.</p></div><MatchingList matches={matches} /></>}{active === 'Transactions' && <><div className="page-title"><div className="eyebrow">{t.timeline.toUpperCase()}</div><h1>One lot. One continuous story.</h1><p>Every state transition stays tied to {demoLot.lotId}.</p></div><div className="two-column timeline-grid"><TransactionTimeline events={auditLogs} /><div><div className="transaction-card"><span className="status-pill">{demoLot.status}</span><h3>TXN-2026-014</h3><p>{demoLot.category} recovery · {demoLot.estimatedWeight} kg</p><div className="transaction-row"><span>Amount</span><b>₹{demoLot.askingPrice.toLocaleString('en-IN')}</b></div><div className="transaction-row"><span>Payment</span><b className="green">Mock payment ready</b></div><button className="primary-button full">Advance workflow <ArrowRight size={17} /></button></div><QrTrace lotId={demoLot.lotId} transactionId="TXN-2026-014" /></div></div></>}{active === 'Safety' && <><div className="page-title"><div className="eyebrow">FIELD NOTES</div><h1>{t.safety}</h1><p>Practical guidance for safer handling, collection, and handover.</p></div><SafetyLibrary guides={safetyGuides} /></>}{active === 'Admin' && <><div className="page-title"><div className="eyebrow">PLATFORM ADMIN</div><h1>{t.admin}</h1><p>Hackathon simulation of recycler verification and platform oversight. No government API claims.</p></div><AdminPanel recyclers={recyclers} /><div className="admin-overview"><div><BarChart3 size={19} /><span>Lots in view</span><b>12</b></div><div><ClipboardCheck size={19} /><span>Transactions</span><b>4</b></div><div><Activity size={19} /><span>Audit events</span><b>{auditLogs.length}</b></div></div></>}</div></main></div> }
+// ─── Auth ─────────────────────────────────────
+import Login from './pages/auth/Login';
+
+// ─── Collector ────────────────────────────────
+import CollectorPortal from './pages/collector/CollectorPortal';
+
+// ─── Recycler ────────────────────────────────
+import RecyclerRegister from './pages/recycler/RecyclerRegister';
+import VerificationStatus from './pages/recycler/VerificationStatus';
+import RecyclerDashboard from './pages/recycler/RecyclerDashboard';
+import RecyclerProfile from './pages/recycler/RecyclerProfile';
+import AvailableLots from './pages/recycler/AvailableLots';
+import LotDetail from './pages/recycler/LotDetail';
+import AcceptLot from './pages/recycler/AcceptLot';
+import MyTransactions from './pages/recycler/MyTransactions';
+import TransactionDetail from './pages/recycler/TransactionDetail';
+import ProcessingReportList from './pages/recycler/ProcessingReportList';
+import ProcessingReport from './pages/recycler/ProcessingReport';
+
+// ─── Admin & Platform Intelligence ────────────
+import AdminVerification from './pages/admin/AdminVerification';
+import PlatformControlRoom from './pages/platform/PlatformControlRoom';
+
+// ─── Public QR Trace ──────────────────────────
+import { TracePage } from './pages/TracePage';
+
+// ─── 404 Not Found ────────────────────────────
+function NotFound() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center bg-gray-50">
+      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <Search size={32} />
+      </div>
+      <h1 className="text-2xl font-bold text-gray-800">Page Not Found</h1>
+      <p className="text-gray-500">This page doesn't exist or you don't have access.</p>
+      <div className="flex gap-3 mt-2">
+        <a href="/login" className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm transition-colors">
+          Go to Sign In
+        </a>
+        <a href="/trace/LOT-2026-001" className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold text-sm transition-colors">
+          View Demo Trace
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+        {/* Public Routes */}
+        <Route path="/"                  element={<Navigate to="/login" replace />} />
+        <Route path="/login"             element={<Login />} />
+        <Route path="/recycler/register" element={<RecyclerRegister />} />
+        <Route path="/trace/:lotId"      element={<TracePage />} />
+
+        {/* Collector Routes */}
+        <Route path="/collector" element={<Navigate to="/collector/dashboard" replace />} />
+        <Route path="/collector/dashboard" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+        <Route path="/collector/add" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+        <Route path="/collector/lots" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+        <Route path="/collector/lots/:lotId" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+        <Route path="/collector/profile" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+        <Route path="/collector/safety" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+        <Route path="/collector/*" element={
+          <ProtectedRoute requiredRole="COLLECTOR"><CollectorPortal /></ProtectedRoute>
+        } />
+
+        {/* Recycler Routes */}
+        <Route path="/recycler/verification-status" element={
+          <ProtectedRoute requiredRole="RECYCLER"><VerificationStatus /></ProtectedRoute>
+        } />
+        <Route path="/recycler/dashboard" element={
+          <ProtectedRoute requiredRole="RECYCLER"><RecyclerDashboard /></ProtectedRoute>
+        } />
+        <Route path="/recycler/profile" element={
+          <ProtectedRoute requiredRole="RECYCLER"><RecyclerProfile /></ProtectedRoute>
+        } />
+        <Route path="/recycler/lots" element={
+          <ProtectedRoute requiredRole="RECYCLER"><AvailableLots /></ProtectedRoute>
+        } />
+        <Route path="/recycler/lots/:lotId" element={
+          <ProtectedRoute requiredRole="RECYCLER"><LotDetail /></ProtectedRoute>
+        } />
+        <Route path="/recycler/lots/:lotId/accept" element={
+          <ProtectedRoute requiredRole="RECYCLER"><AcceptLot /></ProtectedRoute>
+        } />
+        <Route path="/recycler/transactions" element={
+          <ProtectedRoute requiredRole="RECYCLER"><MyTransactions /></ProtectedRoute>
+        } />
+        <Route path="/recycler/transactions/:transactionId" element={
+          <ProtectedRoute requiredRole="RECYCLER"><TransactionDetail /></ProtectedRoute>
+        } />
+        <Route path="/recycler/transactions/:id" element={
+          <ProtectedRoute requiredRole="RECYCLER"><TransactionDetail /></ProtectedRoute>
+        } />
+        <Route path="/recycler/reports" element={
+          <ProtectedRoute requiredRole="RECYCLER"><ProcessingReportList /></ProtectedRoute>
+        } />
+        <Route path="/recycler/reports/new/:transactionId" element={
+          <ProtectedRoute requiredRole="RECYCLER"><ProcessingReport /></ProtectedRoute>
+        } />
+        <Route path="/recycler/reports/:reportId" element={
+          <ProtectedRoute requiredRole="RECYCLER"><ProcessingReport /></ProtectedRoute>
+        } />
+        <Route path="/recycler/*" element={<Navigate to="/recycler/dashboard" replace />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<Navigate to="/admin/verification" replace />} />
+        <Route path="/admin/verification" element={
+          <ProtectedRoute requiredRole="ADMIN"><AdminVerification /></ProtectedRoute>
+        } />
+        <Route path="/admin/intelligence" element={
+          <ProtectedRoute requiredRole="ADMIN"><PlatformControlRoom /></ProtectedRoute>
+        } />
+        <Route path="/admin/*" element={<Navigate to="/admin/verification" replace />} />
+
+        {/* Catch-all 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    );
+  }
