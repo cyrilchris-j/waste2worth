@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} { allow read, write: if request.auth != null && request.auth.uid == userId; }
+    match /collectorProfiles/{collectorId} { allow read, write: if request.auth != null && request.auth.uid == collectorId; }
+    match /lots/{lotId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.collectorId;
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.collectorId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.collectorId && request.resource.data.collectorId == resource.data.collectorId;
+    }
+  }
+}

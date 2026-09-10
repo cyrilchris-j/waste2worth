@@ -1,0 +1,2 @@
+import { QRCodeSVG } from 'qrcode.react'
+export function QrTrace({ lotId, transactionId }: { lotId: string; transactionId: string }) { const url = `${window.location.origin}/trace/${lotId}?transaction=${transactionId}`; return <div className="qr-card"><div><div className="eyebrow">TRACEABILITY</div><h3>Scan the journey</h3><p>Private identities stay hidden. This code exposes only permitted lifecycle events.</p><code>{lotId}</code></div><QRCodeSVG value={url} size={96} bgColor="#ffffff" fgColor="#102f2c" /></div> }

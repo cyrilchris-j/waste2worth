@@ -1,0 +1,1 @@
+export { userService, collectorProfileService, recyclerProfileService, lotService, priceReferenceService, offerService, transactionService, paymentService, handoverService, processingReportService, auditLogService, safetyGuideService } from './platform'
