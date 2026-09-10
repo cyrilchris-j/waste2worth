@@ -16,7 +16,7 @@ import type { Lot, LotStatus, EWasteCategory } from '../types';
 // ─────────────────────────────────────────────
 
 export async function getListedLots(acceptedCategories?: EWasteCategory[]): Promise<Lot[]> {
-  let q = query(collection(db, 'lots'), where('status', '==', 'LISTED'));
+  const q = query(collection(db, 'lots'), where('status', '==', 'LISTED'));
 
   const snap = await getDocs(q);
   let lots = snap.docs.map((d) => ({ ...d.data(), lotId: d.id } as Lot));
