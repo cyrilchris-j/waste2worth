@@ -1,0 +1,9 @@
+{
+  "name": "Waste2Worth Collector",
+  "short_name": "Waste2Worth",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ed",
+  "theme_color": "#14231d",
+  "icons": []
+}
