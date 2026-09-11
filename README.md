@@ -40,7 +40,7 @@ Collectors can:
 * Upload original evidence/photos
 * Specify quantity and estimated weight
 * Set an asking price
-* Compare the asking price with platform reference prices
+* Compare the asking price with platform reference price
 * Create a digital e-waste lot
 * Find suitable verified recyclers
 * Accept transparent transactions
