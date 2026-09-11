@@ -9,7 +9,17 @@ export default defineConfig({
       react: path.resolve(__dirname, 'node_modules/react'),
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
     },
-    dedupe: ['react', 'react-dom', 'react-dom/client', 'react-router-dom'],
+    dedupe: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react-router-dom',
+      'firebase',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/storage',
+    ],
   },
   optimizeDeps: {
     include: [

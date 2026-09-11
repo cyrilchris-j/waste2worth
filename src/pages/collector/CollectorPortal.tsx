@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { auth, firebaseConfigured } from '../../config/firebase';
 import { signOut } from 'firebase/auth';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import { evaluatePrice } from '../../utils/engines';
 import { priceReferences } from '../../data/seed';
 import { getTransactionByLotId } from '../../services/transactionService';
@@ -304,6 +305,7 @@ function TopBar({
               {syncing ? 'SYNCING' : `${pending} PENDING`}
             </button>
           )}
+          <LanguageSelector className="mr-1" />
           <button
             title="Collector profile"
             onClick={() => onNavigate('profile')}
@@ -467,27 +469,38 @@ function AddLot({
 
   async function saveLot(status: Lot['status']) {
     setSaving(true);
+    setError('');
+
+    // Verify real Firebase Auth session
+    const currentUser = auth?.currentUser;
+    const effectiveCollectorId = currentUser?.uid || collectorId;
+
+    if (online && !currentUser) {
+      console.warn('[Collector Auth Warning] Publishing while online, but Firebase Auth currentUser is null.');
+    }
+
+    const timestamp = now();
+    const lot: Lot = {
+      lotId,
+      clientOperationId: lotId,
+      collectorId: effectiveCollectorId,
+      category: (draft.category || 'Other') as Category,
+      conditionAssessment: draft.conditionAssessment,
+      components: draft.components,
+      quantity: Number(draft.quantity) || 0,
+      estimatedWeight: Number(draft.estimatedWeight) || 0,
+      unit: draft.unit,
+      askingPrice: Number(draft.askingPrice) || 0,
+      evidence: draft.evidence,
+      location: draft.location,
+      status,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      syncStatus: online ? 'SYNCED' : 'PENDING_SYNC',
+      notes: draft.notes || '',
+    };
+
     try {
-      const timestamp = now();
-      const lot: Lot = {
-        lotId,
-        clientOperationId: lotId,
-        collectorId,
-        category: (draft.category || 'Other') as Category,
-        conditionAssessment: draft.conditionAssessment,
-        components: draft.components,
-        quantity: Number(draft.quantity) || 0,
-        estimatedWeight: Number(draft.estimatedWeight) || 0,
-        unit: draft.unit,
-        askingPrice: Number(draft.askingPrice) || 0,
-        evidence: draft.evidence,
-        location: draft.location,
-        status,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        syncStatus: online ? 'SYNCED' : 'PENDING_SYNC',
-        notes: draft.notes,
-      };
       await persistLot(lot);
 
       if (status === 'LISTED') {
@@ -508,7 +521,17 @@ function AddLot({
 
       localStorage.removeItem(draftKey);
       onSaved(lot);
-    } catch {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      console.error('[Collector Sync Error]', {
+        code: error?.code || 'UNKNOWN',
+        message: error?.message || String(err),
+        authenticatedUid: auth?.currentUser?.uid || null,
+        collectionPath: `lots/${lot.lotId}`,
+        isAuth: Boolean(auth?.currentUser),
+        collectorId: lot.collectorId,
+        rawError: err,
+      });
       updateLotSync(lotId, 'SYNC_ERROR');
       setError('The lot was saved locally but could not sync. Your data is preserved.');
     } finally {
@@ -543,9 +566,11 @@ function AddLot({
     setSaving(true);
     setError('');
     try {
-      const evidence = await uploadEvidence(collectorId, lotId, file);
+      const effectiveCollectorId = auth?.currentUser?.uid || collectorId;
+      const evidence = await uploadEvidence(effectiveCollectorId, lotId, file);
       update({ evidence: [...draft.evidence, evidence] });
-    } catch {
+    } catch (err) {
+      console.error('[Collector Sync Error] Evidence photo upload failed:', err);
       setError('Evidence upload failed. Try again when connected.');
     } finally {
       setSaving(false);

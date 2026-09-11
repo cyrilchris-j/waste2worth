@@ -41,4 +41,7 @@ if (typeof window !== 'undefined' && db) {
   });
 }
 
+// Re-export modular Firestore API so all callers share the identical instance and prototypes
+export * from 'firebase/firestore';
+
 export default app;

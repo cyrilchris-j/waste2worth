@@ -13,7 +13,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   if (loading) return <PageLoading />;
   if (!firebaseUser && !userProfile) return <Navigate to="/login" replace />;
-  if (requiredRole && role !== requiredRole) return <Navigate to="/login" replace />;
+  if (requiredRole && role?.toUpperCase() !== requiredRole.toUpperCase()) return <Navigate to="/login" replace />;
 
   return <>{children}</>;
 }

@@ -201,6 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
+        setLoading(true);
         await loadProfiles(fbUser);
       } else {
         // If not demo user in localStorage, clear

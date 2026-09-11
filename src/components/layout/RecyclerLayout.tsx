@@ -4,6 +4,7 @@ import { logoutUser } from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { LayoutDashboard, Package, ArrowLeftRight, FileText, User, ArrowLeft } from 'lucide-react';
+import { LanguageSelector } from '../LanguageSelector';
 
 const NAV_ITEMS = [
   { path: '/recycler/dashboard',    label: 'Dashboard', icon: LayoutDashboard },
@@ -48,6 +49,7 @@ export function RecyclerLayout({ children, title, backPath }: RecyclerLayoutProp
               <p className="text-xs text-gray-500 truncate">{userProfile.name}</p>
             )}
           </div>
+          <LanguageSelector className="shrink-0 text-xs" />
           <button
             onClick={handleLogout}
             className="text-xs text-gray-500 px-2 py-1 rounded-lg hover:bg-gray-100 shrink-0"

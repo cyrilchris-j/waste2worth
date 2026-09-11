@@ -15,25 +15,37 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
+    function userDoc() {
+      return /databases/$(database)/documents/users/$(uid());
+    }
+
+    function hasUserDoc() {
+      return exists(userDoc());
+    }
+
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(uid())).data.role;
+      return get(userDoc()).data.role;
     }
 
     function isRecycler() {
-      return isSignedIn() && userRole() == 'RECYCLER';
+      return isSignedIn() && hasUserDoc() && (userRole() == 'RECYCLER' || userRole() == 'recycler');
     }
 
     function isAdmin() {
-      return isSignedIn() && userRole() == 'ADMIN';
+      return isSignedIn() && hasUserDoc() && (userRole() == 'ADMIN' || userRole() == 'admin');
     }
 
     function isCollector() {
-      return isSignedIn() && userRole() == 'COLLECTOR';
+      return isSignedIn() && (
+        (hasUserDoc() && (userRole() == 'COLLECTOR' || userRole() == 'collector')) ||
+        exists(/databases/$(database)/documents/collectorProfiles/$(uid()))
+      );
     }
 
     function isVerifiedRecycler() {
       return isRecycler() &&
-        get(/databases/$(database)/documents/recyclerProfiles/$(uid())).data.verificationStatus == 'VERIFIED';
+        exists(/databases/$(database)/documents/recyclerProfiles/$(uid())) &&
+        get(/databases/$(database)/documents/recyclerProfiles/$(uid())).data.verificationStatus in ['VERIFIED', 'verified'];
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -42,7 +54,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn() && (uid() == userId || isAdmin());
-      allow create: if isSignedIn() && uid() == userId;
+      allow create: if isSignedIn() && uid() == userId &&
+                      !(request.resource.data.role in ['ADMIN', 'admin']);
       allow update: if (isSignedIn() && uid() == userId &&
                         !('role' in request.resource.data.diff(resource.data).affectedKeys())) ||
                        isAdmin();
@@ -82,7 +95,7 @@ service cloud.firestore {
       allow read: if (isVerifiedRecycler() && resource.data.status in ['LISTED', 'MATCHED', 'ACCEPTED', 'PAID', 'HANDED_OVER', 'RECEIVED', 'PROCESSING', 'COMPLETED']) ||
                      (isCollector() && resource.data.collectorId == uid()) ||
                      isAdmin();
-      allow create: if isCollector();
+      allow create: if isCollector() && request.resource.data.collectorId == uid();
       allow update: if (isCollector() && resource.data.collectorId == uid()) ||
                        (isVerifiedRecycler() &&
                         request.resource.data.diff(resource.data).affectedKeys()

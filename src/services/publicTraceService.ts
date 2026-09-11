@@ -1,5 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, db } from '../config/firebase';
 
 export interface PublicTraceTimelineEvent {
   status: string;

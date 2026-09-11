@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Activity, ArrowRight, BarChart3, CircleHelp, ClipboardCheck, Languages, LayoutDashboard, Menu, PackageCheck, ShieldCheck, Sparkles, Truck, X } from 'lucide-react'
 import { AdminPanel } from '../../components/AdminPanel'
 import { MatchingList } from '../../components/MatchingList'
@@ -7,7 +7,7 @@ import { QrTrace } from '../../components/QrTrace'
 import { SafetyLibrary } from '../../components/SafetyLibrary'
 import { TransactionTimeline } from '../../components/TransactionTimeline'
 import { auditLogs, demoLot, priceReferences, recyclers, safetyGuides } from '../../data/seed'
-import { translations, type Language } from '../../locales/translations'
+import { translations, type Language, SUPPORTED_LANGUAGES, getStoredLanguage, setStoredLanguage } from '../../locales/translations'
 import { UserRole } from '../../types/domain'
 import { evaluatePrice, scoreRecycler } from '../../utils/engines'
 
@@ -21,9 +21,15 @@ const navItems = [
 
 export default function PlatformControlRoom() {
   const [active, setActive] = useState('Overview')
-  const [language, setLanguage] = useState<Language>('en')
+  const [language, setLanguage] = useState<Language>(getStoredLanguage)
   const [menuOpen, setMenuOpen] = useState(false)
   const t = translations[language]
+
+  useEffect(() => {
+    const handleStorage = () => setLanguage(getStoredLanguage());
+    window.addEventListener('languagechange', handleStorage);
+    return () => window.removeEventListener('languagechange', handleStorage);
+  }, []);
 
   const reference = priceReferences.find(item => item.category === demoLot.category) ?? priceReferences[0]
   const evaluation = useMemo(() => evaluatePrice(demoLot, reference), [reference])
@@ -96,12 +102,19 @@ export default function PlatformControlRoom() {
               <Languages size={16} />
               <select
                 value={language}
-                onChange={event => setLanguage(event.target.value as Language)}
+                onChange={event => {
+                  const nextLang = event.target.value as Language;
+                  setLanguage(nextLang);
+                  setStoredLanguage(nextLang);
+                  window.dispatchEvent(new Event('languagechange'));
+                }}
                 aria-label={t.language}
               >
-                <option value="en">EN</option>
-                <option value="ta">தமிழ்</option>
-                <option value="hi">हिन्दी</option>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.nativeName} ({lang.code.toUpperCase()})
+                  </option>
+                ))}
               </select>
             </label>
             <div className="status-dot">
