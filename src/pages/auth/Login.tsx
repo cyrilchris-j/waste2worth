@@ -8,11 +8,11 @@ import {
   registerRecycler,
 } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, Input, Select } from '../../components/ui';
+import { Button, Input } from '../../components/ui';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { SUPPORTED_LANGUAGES, t, type Language } from '../../locales/translations';
 import toast from 'react-hot-toast';
-import { Recycle, Package, Shield, UserPlus, LogIn, ArrowRight } from 'lucide-react';
+import { Recycle, Package, Shield, UserPlus, LogIn } from 'lucide-react';
 import type { User, CollectorProfile, RecyclerProfile } from '../../types';
 
 type AuthMode = 'login' | 'signup_collector' | 'signup_recycler';
