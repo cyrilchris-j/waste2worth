@@ -3,7 +3,7 @@
 
 ## Challenge 19 — Digital Platform for Formal E-Waste Collection and Recycling
 
-> A secure, transparent, offline-first digital platform connecting e-waste collectors with verified recycling entities through condition-based listings, fair-value estimation, controlled transactions, traceable handovers, and post-recycling reporting.
+> A secure, transparent, offline-first digital platform connecting e-waste collectors with verified recycling entities through condition-based listings, fair-value estimation,controlled transactions,traceable handovers,and post-recycling reporting.
 
 ---
 
@@ -60,7 +60,7 @@ Recyclers can:
 * Review complete item descriptions and evidence
 * Review price references
 * Accept/reject listings
-* Explicitly accept platform terms and transaction conditions
+* Explicitly accept platform terms & transaction conditions
 * Complete payment
 * Confirm material receipt
 * Submit post-recycling/processing reports
