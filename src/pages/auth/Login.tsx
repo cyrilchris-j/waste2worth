@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { loginUser, getUserProfile } from '../../services/authService';
+import { loginUser, getUserProfile, loginOrCreateDemoUser } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -40,7 +40,7 @@ export default function Login() {
     }
   };
 
-  const handleDemoLogin = (demoRole: 'COLLECTOR' | 'RECYCLER' | 'ADMIN') => {
+  const fallbackLocalDemo = (demoRole: 'COLLECTOR' | 'RECYCLER' | 'ADMIN') => {
     if (demoRole === 'COLLECTOR') {
       const collectorUser: User = {
         userId: 'collector-ashok-demo',
@@ -68,7 +68,7 @@ export default function Login() {
         earnings: 12500,
       };
       setDemoUser(collectorUser, colProfile);
-      toast.success('Logged in as Ashok (Collector)');
+      toast.success('Offline demo: Logged in as Ashok (Collector)');
       navigate('/collector/dashboard');
     } else if (demoRole === 'RECYCLER') {
       const recyclerUser: User = {
@@ -93,13 +93,13 @@ export default function Login() {
         cpcbRegistrationNo: 'TNPCB/E-WASTE/2024/0981',
         cpcbValidityDate: '2028-12-31',
         dailyCapacityKg: 5000,
-        acceptedCategories: ['PCB', 'BATTERY', 'DISPLAY', 'CABLE', 'MIXED'],
+        acceptedCategories: ['PCB', 'BATTERY', 'DISPLAY', 'CABLE', 'MIXED', 'Laptop', 'LAPTOP'],
         verificationStatus: 'VERIFIED',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       setDemoUser(recyclerUser, undefined, recProfile);
-      toast.success('Logged in as Cyril (Verified Recycler)');
+      toast.success('Offline demo: Logged in as Cyril (Verified Recycler)');
       navigate('/recycler/dashboard');
     } else if (demoRole === 'ADMIN') {
       const adminUser: User = {
@@ -112,8 +112,95 @@ export default function Login() {
         createdAt: new Date().toISOString(),
       };
       setDemoUser(adminUser);
-      toast.success('Logged in as Prasanna (Admin)');
+      toast.success('Offline demo: Logged in as Prasanna (Admin)');
       navigate('/admin/verification');
+    }
+  };
+
+  const handleDemoLogin = async (demoRole: 'COLLECTOR' | 'RECYCLER' | 'ADMIN') => {
+    setLoading(true);
+    try {
+      const fbUser = await loginOrCreateDemoUser(demoRole);
+      const uid = fbUser.uid;
+      if (demoRole === 'COLLECTOR') {
+        const cUser: User = {
+          userId: uid,
+          role: 'COLLECTOR',
+          name: 'Ashok Kumar',
+          displayName: 'Ashok Kumar',
+          email: fbUser.email || 'ashok@collector.local',
+          phone: '+91 98765 43210',
+          createdAt: new Date().toISOString(),
+        };
+        const cProf: CollectorProfile = {
+          collectorId: uid,
+          fullName: 'Ashok Kumar',
+          displayName: 'Ashok Kumar',
+          phone: '+91 98765 43210',
+          email: fbUser.email || 'ashok@collector.local',
+          location: 'Ambattur Industrial Estate, Chennai',
+          collectorType: 'Independent Scrap Aggregator',
+          termsAccepted: true,
+          participationTermsAccepted: true,
+          status: 'VERIFIED',
+          createdAt: new Date().toISOString(),
+          totalLots: 4,
+          completedLots: 2,
+          earnings: 12500,
+        };
+        setDemoUser(cUser, cProf);
+        toast.success('Authenticated with Firebase as Collector');
+        navigate('/collector/dashboard');
+      } else if (demoRole === 'RECYCLER') {
+        const rUser: User = {
+          userId: uid,
+          role: 'RECYCLER',
+          name: 'Cyril EcoMetal Corp',
+          displayName: 'Cyril EcoMetal Corp',
+          email: fbUser.email || 'cyril@recycler.local',
+          phone: '+91 91234 56789',
+          verificationStatus: 'VERIFIED',
+          createdAt: new Date().toISOString(),
+        };
+        const rProf: RecyclerProfile = {
+          recyclerId: uid,
+          facilityName: 'EcoMetal Circular Solutions',
+          contactPerson: 'Cyril Chris',
+          email: fbUser.email || 'cyril@recycler.local',
+          phone: '+91 91234 56789',
+          address: 'SIPCOT Industrial Park, Sriperumbudur',
+          state: 'Tamil Nadu',
+          pincode: '602105',
+          cpcbRegistrationNo: 'TNPCB/E-WASTE/2024/0981',
+          cpcbValidityDate: '2028-12-31',
+          dailyCapacityKg: 5000,
+          acceptedCategories: ['PCB', 'BATTERY', 'DISPLAY', 'CABLE', 'MIXED', 'Laptop', 'LAPTOP'],
+          verificationStatus: 'VERIFIED',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setDemoUser(rUser, undefined, rProf);
+        toast.success('Authenticated with Firebase as Recycler');
+        navigate('/recycler/dashboard');
+      } else {
+        const aUser: User = {
+          userId: uid,
+          role: 'ADMIN',
+          name: 'Prasanna (Platform Admin)',
+          displayName: 'Prasanna',
+          email: fbUser.email || 'prasanna@platform.local',
+          phone: '+91 99999 88888',
+          createdAt: new Date().toISOString(),
+        };
+        setDemoUser(aUser);
+        toast.success('Authenticated with Firebase as Admin');
+        navigate('/admin/verification');
+      }
+    } catch (err) {
+      console.warn('Firebase Auth demo login unavailable or offline, using fallback:', err);
+      fallbackLocalDemo(demoRole);
+    } finally {
+      setLoading(false);
     }
   };
 

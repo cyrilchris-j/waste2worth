@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getLotById } from '../../services/lotService';
 import { transactionExistsForLot, createTransaction } from '../../services/transactionService';
 import { updateLotStatus } from '../../services/lotService';
+import { updatePublicTrace } from '../../services/publicTraceService';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, LoadingSpinner, ErrorMessage } from '../../components/ui';
 import type { Lot } from '../../types';
@@ -87,6 +88,18 @@ export default function AcceptLot() {
 
       // Update lot status LISTED → ACCEPTED
       await updateLotStatus(lot.lotId, 'ACCEPTED');
+
+      // Update public trace projection (FIX 3)
+      await updatePublicTrace(lot.lotId, {
+        status: 'ACCEPTED',
+        transactionReference: transactionId,
+        timeline: [
+          { status: 'LOT_CREATED', label: 'Material declared by Collector', timestamp: lot.createdAt },
+          { status: 'LOT_LISTED', label: 'Listed on Waste2Worth Marketplace', timestamp: lot.createdAt },
+          { status: 'LOT_ACCEPTED', label: 'Accepted by Authorized Recycler', timestamp: new Date().toISOString() },
+        ],
+        publicMilestones: ['Declaration verified', 'Accepted by Recycler', 'Trade contract active'],
+      });
 
       toast.success('Lot accepted! Transaction created.');
       navigate(`/recycler/transactions/${transactionId}`);

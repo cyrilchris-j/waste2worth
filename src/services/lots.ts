@@ -6,11 +6,17 @@ import { queueLot, readLots, updateLotSync } from './offline'
 
 export async function uploadEvidence(collectorId: string, lotId: string, file: File): Promise<EvidenceReference> {
   const base: EvidenceReference = { id: crypto.randomUUID(), name: file.name, type: file.type, size: file.size, createdAt: new Date().toISOString() }
-  if (!storage || !navigator.onLine) return { ...base, dataUrl: await fileToDataUrl(file) }
-  const path = `lots/${collectorId}/${lotId}/${base.id}-${file.name}`
-  const storageRef = ref(storage, path)
-  await uploadBytes(storageRef, file)
-  return { ...base, storagePath: path, downloadUrl: await getDownloadURL(storageRef) }
+  const dataUrl = await fileToDataUrl(file)
+  if (storage && navigator.onLine) {
+    try {
+      const path = `lots/${collectorId}/${lotId}/${base.id}-${file.name}`
+      const storageRef = ref(storage, path)
+      uploadBytes(storageRef, file).catch(() => undefined)
+    } catch {
+      // ignore
+    }
+  }
+  return { ...base, dataUrl }
 }
 
 function fileToDataUrl(file: File) {

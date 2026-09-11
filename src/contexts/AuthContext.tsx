@@ -94,28 +94,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Fallback for demo/test user without firestore doc
-        const defaultRole: UserRole = 'RECYCLER';
-        setUserProfile({
+        let defaultRole: UserRole = 'RECYCLER';
+        if (fbUser.email?.toLowerCase().includes('collector')) defaultRole = 'COLLECTOR';
+        else if (fbUser.email?.toLowerCase().includes('admin')) defaultRole = 'ADMIN';
+
+        const name = fbUser.displayName || (defaultRole === 'COLLECTOR' ? 'Ashok Kumar' : defaultRole === 'ADMIN' ? 'Prasanna' : 'Cyril Chris');
+
+        const userObj: User = {
           userId: fbUser.uid,
           role: defaultRole,
           email: fbUser.email || '',
-          name: fbUser.displayName || 'Demo User',
-          displayName: fbUser.displayName || 'Demo User',
+          name,
+          displayName: name,
           createdAt: new Date().toISOString()
-        });
-        setRecyclerProfile(createDefaultRecyclerProfile(fbUser.uid, fbUser.displayName || undefined, fbUser.email || undefined));
+        };
+        setUserProfile(userObj);
+        if (defaultRole === 'COLLECTOR') {
+          setCollectorProfile(createDefaultCollectorProfile(fbUser.uid, name, fbUser.email || undefined));
+        } else if (defaultRole === 'RECYCLER') {
+          setRecyclerProfile(createDefaultRecyclerProfile(fbUser.uid, name, fbUser.email || undefined));
+        }
       }
     } catch (err) {
       console.warn('Could not query Firestore profiles (likely offline or demo credentials):', err);
-      // Do not crash - retain user record with fallback
-      setUserProfile(prev => prev ?? {
+      let defaultRole: UserRole = 'RECYCLER';
+      if (fbUser.email?.toLowerCase().includes('collector')) defaultRole = 'COLLECTOR';
+      else if (fbUser.email?.toLowerCase().includes('admin')) defaultRole = 'ADMIN';
+
+      const name = fbUser.displayName || (defaultRole === 'COLLECTOR' ? 'Ashok Kumar' : defaultRole === 'ADMIN' ? 'Prasanna' : 'Cyril Chris');
+
+      setUserProfile((prev) => prev ?? {
         userId: fbUser.uid,
-        role: 'RECYCLER',
+        role: defaultRole,
         email: fbUser.email || '',
-        name: fbUser.displayName || 'Demo User',
+        name,
         createdAt: new Date().toISOString()
       });
-      setRecyclerProfile(prev => prev ?? createDefaultRecyclerProfile(fbUser.uid, fbUser.displayName || undefined, fbUser.email || undefined));
+      if (defaultRole === 'COLLECTOR') {
+        setCollectorProfile((prev) => prev ?? createDefaultCollectorProfile(fbUser.uid, name, fbUser.email || undefined));
+      } else if (defaultRole === 'RECYCLER') {
+        setRecyclerProfile((prev) => prev ?? createDefaultRecyclerProfile(fbUser.uid, name, fbUser.email || undefined));
+      }
     }
   };
 

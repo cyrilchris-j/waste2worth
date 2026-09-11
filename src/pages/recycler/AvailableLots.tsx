@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { LoadingSpinner, EmptyState, LotStatusBadge, ErrorMessage } from '../../components/ui';
-import { getListedLots } from '../../services/lotService';
+import { getListedLots, matchesCategory } from '../../services/lotService';
 import { E_WASTE_CATEGORIES } from '../../types';
 import { Lock, Search, PackageSearch, Check, AlertTriangle, MapPin, ChevronRight, ArrowRight } from 'lucide-react';
 import type { Lot, EWasteCategory, OverallCondition } from '../../types';
@@ -66,7 +66,11 @@ export default function AvailableLots() {
     if (minWeight) result = result.filter((l) => (l.estimatedWeightKg ?? l.estimatedWeight ?? 0) >= Number(minWeight));
 
     result.sort((a, b) => {
-      if (sort === 'newest')      return (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0);
+      if (sort === 'newest') {
+        const tA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+        const tB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+        return tB - tA;
+      }
       if (sort === 'price_asc')   return a.askingPrice - b.askingPrice;
       if (sort === 'price_desc')  return b.askingPrice - a.askingPrice;
       if (sort === 'weight_desc') return (b.estimatedWeightKg ?? b.estimatedWeight ?? 0) - (a.estimatedWeightKg ?? a.estimatedWeight ?? 0);
@@ -207,7 +211,7 @@ export default function AvailableLots() {
               </span>
               <span className="chip">{lot.quantity ?? 1} unit{lot.quantity !== 1 ? 's' : ''}</span>
               <span className="chip">{lot.estimatedWeightKg ?? lot.estimatedWeight ?? 0} kg</span>
-              {(recyclerProfile?.acceptedCategories || []).includes(lot.category) && (
+              {matchesCategory(lot.category, recyclerProfile?.acceptedCategories as string[]) && (
                 <span className="chip chip-green inline-flex items-center gap-1">
                   <Check size={12} />
                   <span>Compatible</span>

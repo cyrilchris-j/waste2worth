@@ -193,5 +193,15 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PUBLIC TRACES (FIX 3: Anonymous public QR trace — Privacy Preserving)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    match /publicTraces/{lotId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
   }
 }

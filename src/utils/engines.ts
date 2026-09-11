@@ -27,8 +27,8 @@ export function scoreRecycler(
 ): MatchResult {
   const lotWeight = lot.estimatedWeight ?? lot.estimatedWeightKg ?? 1
   const acceptedMaterials = recycler.acceptedMaterials || (recycler.acceptedCategories as string[]) || []
-  const material = acceptedMaterials.includes(lot.category) ? 30 : 0
-  const normalizedCategory = String(lot.category).toLowerCase()
+  const normalizedCategory = String(lot.category || '').trim().toLowerCase()
+  const material = acceptedMaterials.some(m => String(m).trim().toLowerCase() === normalizedCategory) ? 30 : 0
   const processingCapabilities = (recycler.processingCapabilities as string[]) || []
   const capability = processingCapabilities.some(item => {
     const normalizedCapability = String(item).toLowerCase()
@@ -45,7 +45,8 @@ export function scoreRecycler(
   return { recycler, compatibilityScore: material + capability + capacity + location + price + verification, reasons }
 }
 
-export const allowedTransitions: Record<LotStatus, LotStatus[]> = {
+export const allowedTransitions: Record<LotStatus | string, LotStatus[]> = {
+  CREATED: [LotStatus.ACCEPTED, LotStatus.PAYMENT_PENDING, LotStatus.PAID, LotStatus.CANCELLED],
   [LotStatus.DRAFT]: [LotStatus.LISTED, LotStatus.CANCELLED],
   [LotStatus.LISTED]: [LotStatus.MATCHED, LotStatus.ACCEPTED, LotStatus.CANCELLED],
   [LotStatus.MATCHED]: [LotStatus.ACCEPTED, LotStatus.CANCELLED, LotStatus.DISPUTED],

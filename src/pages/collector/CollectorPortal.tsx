@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CircleAlert,
   CloudOff,
+  Edit3,
   FileImage,
   Leaf,
   LogOut,
@@ -19,6 +20,11 @@ import {
 } from 'lucide-react';
 import { auth, firebaseConfigured } from '../../config/firebase';
 import { signOut } from 'firebase/auth';
+import { evaluatePrice } from '../../utils/engines';
+import { priceReferences } from '../../data/seed';
+import { getTransactionByLotId } from '../../services/transactionService';
+import { publishPublicTrace } from '../../services/publicTraceService';
+import type { Transaction } from '../../types';
 import {
   loadRemoteLots,
   persistLot,
@@ -29,7 +35,6 @@ import {
   emptyComponents,
   emptyCondition,
   categories,
-  type AppUser,
   type Category,
   type EWasteCategory,
   type CollectorProfile,
@@ -37,12 +42,10 @@ import {
   type Lot,
   type LotComponents,
   type LotDraft,
-  type SyncStatus,
 } from '../../types';
 import {
   Card,
   MetricCard,
-  Button,
   LotStatusBadge,
   Badge,
   Alert,
@@ -442,6 +445,7 @@ function AddLot({
   const [lotId] = useState(makeId);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   function update(patch: Partial<LotDraft>) {
     const next = { ...draft, ...patch };
@@ -457,6 +461,7 @@ function AddLot({
       return 'Add a location and use quantity and weight greater than zero.';
     if (step === 4 && draft.evidence.length === 0) return 'Add at least one original item photo.';
     if (step === 5 && !(Number(draft.askingPrice) >= 0)) return 'Enter an asking price of zero or more.';
+    if (step === 6 && !confirmed) return 'Please confirm your declaration before publishing.';
     return '';
   }
 
@@ -484,6 +489,23 @@ function AddLot({
         notes: draft.notes,
       };
       await persistLot(lot);
+
+      if (status === 'LISTED') {
+        // Project to publicTraces for privacy-preserving anonymous QR verification (FIX 3)
+        await publishPublicTrace({
+          lotId: lot.lotId,
+          category: lot.category,
+          status: 'LISTED',
+          createdAt: lot.createdAt,
+          updatedAt: lot.updatedAt,
+          timeline: [
+            { status: 'LOT_CREATED', label: 'Material declared by Collector', timestamp: lot.createdAt },
+            { status: 'LOT_LISTED', label: 'Listed on Waste2Worth Marketplace', timestamp: lot.createdAt },
+          ],
+          publicMilestones: ['Declaration verified', 'Available on Marketplace'],
+        });
+      }
+
       localStorage.removeItem(draftKey);
       onSaved(lot);
     } catch {
@@ -501,7 +523,7 @@ function AddLot({
       return;
     }
     setError('');
-    if (step < 5) {
+    if (step < 6) {
       setStep(step + 1);
       return;
     }
@@ -537,6 +559,7 @@ function AddLot({
     'Measure the lot',
     'Add original evidence',
     'Set asking price',
+    'Review & confirm',
   ];
   const progress = `${step + 1} / ${titles.length}`;
 
@@ -575,6 +598,17 @@ function AddLot({
           />
         )}
         {step === 5 && <PriceStep draft={draft} onChange={update} />}
+        {step === 6 && (
+          <ReviewStep
+            draft={draft}
+            onEditStep={(targetStep) => {
+              setError('');
+              setStep(targetStep);
+            }}
+            confirmed={confirmed}
+            onConfirmChange={setConfirmed}
+          />
+        )}
 
         {error && (
           <div className="mt-6">
@@ -612,11 +646,11 @@ function AddLot({
               </button>
             )}
             <button
-              disabled={saving}
+              disabled={saving || (step === 6 && !confirmed)}
               className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 active:bg-brand-800 active:scale-[0.99] transition-all min-h-[44px] shadow-sm disabled:opacity-50"
               onClick={next}
             >
-              {saving ? 'Saving...' : step === 5 ? 'List this lot' : 'Continue'}
+              {saving ? 'Saving...' : step === 6 ? 'Publish lot' : step === 5 ? 'Review lot' : 'Continue'}
               <ChevronRight size={17} />
             </button>
           </div>
@@ -773,6 +807,7 @@ function MeasureStep({ draft, onChange }: { draft: LotDraft; onChange: (patch: P
         <label>
           <span className="text-xs uppercase tracking-wider text-gray-600 font-bold mb-2 block">Quantity *</span>
           <input
+            id="lot-quantity"
             className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
             type="number"
             min="1"
@@ -784,6 +819,7 @@ function MeasureStep({ draft, onChange }: { draft: LotDraft; onChange: (patch: P
         <label>
           <span className="text-xs uppercase tracking-wider text-gray-600 font-bold mb-2 block">Weight (kg) *</span>
           <input
+            id="lot-weight"
             className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
             type="number"
             min="0.01"
@@ -795,6 +831,7 @@ function MeasureStep({ draft, onChange }: { draft: LotDraft; onChange: (patch: P
         <label>
           <span className="text-xs uppercase tracking-wider text-gray-600 font-bold mb-2 block">Unit</span>
           <select
+            id="lot-unit"
             className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
             value={draft.unit}
             onChange={(event) => onChange({ unit: event.target.value as 'kg' | 'units' })}
@@ -807,6 +844,7 @@ function MeasureStep({ draft, onChange }: { draft: LotDraft; onChange: (patch: P
       <label className="block">
         <span className="text-xs uppercase tracking-wider text-gray-600 font-bold mb-2 block">Collection location *</span>
         <input
+          id="lot-location"
           className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
           required
           value={draft.location}
@@ -817,6 +855,7 @@ function MeasureStep({ draft, onChange }: { draft: LotDraft; onChange: (patch: P
       <label className="block">
         <span className="text-xs uppercase tracking-wider text-gray-600 font-bold mb-2 block">Notes</span>
         <textarea
+          id="lot-notes"
           className="w-full rounded-xl border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white"
           rows={3}
           value={draft.notes}
@@ -904,6 +943,222 @@ function PriceStep({ draft, onChange }: { draft: LotDraft; onChange: (patch: Par
   );
 }
 
+function ReviewStep({
+  draft,
+  onEditStep,
+  confirmed,
+  onConfirmChange,
+}: {
+  draft: LotDraft;
+  onEditStep: (stepIndex: number) => void;
+  confirmed: boolean;
+  onConfirmChange: (confirmed: boolean) => void;
+}) {
+  const ref = priceReferences.find(
+    (r) => r.category.toLowerCase() === (draft.category || '').toLowerCase()
+  ) || {
+    id: 'ref-default',
+    category: draft.category || 'Other',
+    material: 'Standard e-waste',
+    referencePrice: 200,
+    unit: 'per kg',
+    sourceType: 'MOCK_REFERENCE',
+    sourceName: 'Waste2Worth demo reference',
+    effectiveDate: '2026-09-01',
+    createdAt: '2026-09-01',
+    updatedAt: '2026-09-01',
+  };
+
+  const weight = Number(draft.estimatedWeight) || 1;
+  const askingPrice = Number(draft.askingPrice) || 0;
+
+  const evaluation = evaluatePrice(
+    {
+      category: draft.category || 'Other',
+      askingPrice,
+      estimatedWeight: weight,
+      conditionAssessment: draft.conditionAssessment,
+    },
+    ref
+  );
+
+  const condition = draft.conditionAssessment;
+  const components = draft.components;
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl bg-brand-50 border border-brand-100 p-4">
+        <p className="text-xs uppercase tracking-wider text-brand-700 font-bold">Pre-Publish Review</p>
+        <p className="mt-1 text-sm text-brand-900">
+          Carefully review your material declaration and valuation before publishing to the platform marketplace.
+        </p>
+      </div>
+
+      {/* Material & Measurements */}
+      <div className="rounded-2xl border border-gray-200 p-5 bg-white">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">1. Material & Measurement</h3>
+          <button
+            onClick={() => onEditStep(0)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+          >
+            <Edit3 size={13} /> Edit
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Category</span>
+            <strong className="text-gray-900">{draft.category || '—'}</strong>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Quantity</span>
+            <strong className="text-gray-900">{draft.quantity} {draft.unit}</strong>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Estimated Weight</span>
+            <strong className="text-gray-900">{draft.estimatedWeight} kg</strong>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Pickup Location</span>
+            <strong className="text-gray-900 truncate block">{draft.location || '—'}</strong>
+          </div>
+        </div>
+        {draft.notes && (
+          <div className="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-600">
+            <span className="font-semibold text-gray-700">Notes: </span>{draft.notes}
+          </div>
+        )}
+      </div>
+
+      {/* Condition & Components */}
+      <div className="rounded-2xl border border-gray-200 p-5 bg-white">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">2. Condition & Components</h3>
+          <div className="flex gap-3">
+            <button
+              onClick={() => onEditStep(1)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+            >
+              <Edit3 size={13} /> Condition
+            </button>
+            <button
+              onClick={() => onEditStep(2)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+            >
+              <Edit3 size={13} /> Components
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Working Condition</span>
+            <strong className="text-gray-900">{condition.working ? condition.working.replace('_', ' ') : '—'}</strong>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Physical Damage</span>
+            <strong className="text-gray-900">{condition.physicalDamage ? 'Yes' : 'No'}</strong>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Water Damage</span>
+            <strong className="text-gray-900">{condition.waterDamage ? 'Yes' : 'No'}</strong>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 font-medium block">Battery Condition</span>
+            <strong className="text-gray-900">{condition.batteryCondition || 'Unknown'}</strong>
+          </div>
+        </div>
+        <div className="mt-4 pt-3 border-t border-gray-100 grid gap-2 text-xs text-gray-700">
+          <div><span className="font-semibold text-gray-900">Components Present: </span>{components.present || '—'}</div>
+          {components.missing && <div><span className="font-semibold text-gray-900">Components Missing: </span>{components.missing}</div>}
+          {components.reusable && <div><span className="font-semibold text-gray-900">Reusable Parts: </span>{components.reusable}</div>}
+          {components.hazardous && <div><span className="font-semibold text-gray-900">Hazardous Parts: </span>{components.hazardous}</div>}
+        </div>
+      </div>
+
+      {/* Evidence Photos */}
+      <div className="rounded-2xl border border-gray-200 p-5 bg-white">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+            3. Evidence ({draft.evidence.length} photo{draft.evidence.length === 1 ? '' : 's'})
+          </h3>
+          <button
+            onClick={() => onEditStep(4)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+          >
+            <Edit3 size={13} /> Edit
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3">
+          {draft.evidence.map((item) => (
+            <div key={item.id} className="relative aspect-square rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+              {item.dataUrl ? (
+                <img src={item.dataUrl} alt={item.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="grid place-items-center h-full text-brand-600"><FileImage size={24} /></div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Asking Price & Valuation Guidance */}
+      <div className="rounded-2xl border border-gray-200 p-5 bg-white">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">4. Price & Valuation Guidance</h3>
+          <button
+            onClick={() => onEditStep(5)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+          >
+            <Edit3 size={13} /> Edit
+          </button>
+        </div>
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-bold block">Your Declared Asking Price</span>
+            <strong className="text-2xl font-bold text-gray-900">₹{askingPrice.toLocaleString('en-IN')}</strong>
+          </div>
+          <div className="sm:text-right">
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-bold block">Platform Reference Range</span>
+            <p className="text-sm font-bold text-brand-700">
+              ₹{evaluation.suggestedFairValueRange[0].toLocaleString('en-IN')} – ₹{evaluation.suggestedFairValueRange[1].toLocaleString('en-IN')}
+            </p>
+            <span className="text-xs text-gray-500">Benchmark: ₹{evaluation.referencePrice.toLocaleString('en-IN')} (₹{ref.referencePrice}/kg)</span>
+          </div>
+        </div>
+
+        {evaluation.priceFlag && (
+          <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-xs text-amber-900">
+            <CircleAlert size={16} className="text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block font-bold">Price Guidance Notice ({evaluation.priceStatus})</strong>
+              <span>{evaluation.reason}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Confirmation Checkbox */}
+      <div className="rounded-2xl border-2 border-brand-200 bg-brand-50/50 p-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            id="confirm-publish"
+            type="checkbox"
+            checked={confirmed}
+            onChange={(e) => onConfirmChange(e.target.checked)}
+            className="h-5 w-5 rounded border-gray-300 text-brand-600 accent-brand-600 focus:ring-brand-500 mt-0.5"
+          />
+          <div>
+            <strong className="text-sm font-bold text-gray-900 block">Confirm material accuracy</strong>
+            <p className="text-xs text-gray-600 mt-0.5">
+              I certify that all details, components, weights and photos accurately describe the lot in my possession.
+            </p>
+          </div>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function Lots({ lots, onBack, onOpen }: { lots: Lot[]; onBack: () => void; onOpen: (lot: Lot) => void }) {
   return (
     <div className="mx-auto max-w-4xl">
@@ -962,6 +1217,24 @@ function Lots({ lots, onBack, onOpen }: { lots: Lot[]; onBack: () => void; onOpe
 }
 
 function LotDetail({ lot, onBack }: { lot: Lot; onBack: () => void }) {
+  const [txn, setTxn] = useState<Transaction | null>(null);
+  const [loadingTxn, setLoadingTxn] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    getTransactionByLotId(lot.lotId)
+      .then((t) => {
+        if (mounted) setTxn(t);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoadingTxn(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [lot.lotId]);
+
   const conditionObj = typeof lot.conditionAssessment === 'object' ? lot.conditionAssessment : null;
   const componentsObj = typeof lot.components === 'object' && !Array.isArray(lot.components) ? lot.components : null;
 
@@ -1038,6 +1311,41 @@ function LotDetail({ lot, onBack }: { lot: Lot; onBack: () => void }) {
             <p>Last updated {new Date(lot.updatedAt).toLocaleString()}</p>
           </div>
         </Card>
+
+        {/* Transaction & Settlement History (FIX 6) */}
+        <div className="lg:col-span-2">
+          <Card padding="lg" className="border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-100 flex items-center justify-between">
+              <span>Transaction & Settlement</span>
+              {txn && <Badge label={txn.status} variant={txn.status === 'COMPLETED' ? 'green' : 'blue'} />}
+            </h2>
+
+            {loadingTxn ? (
+              <p className="text-sm text-gray-500 py-4">Checking transaction records...</p>
+            ) : txn ? (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <Info label="Transaction ID" value={txn.transactionId} />
+                  <Info label="Recycler" value={txn.recyclerId} />
+                  <Info label="Agreed Price" value={`₹${(txn.agreedPrice ?? txn.amount ?? 0).toLocaleString('en-IN')}`} />
+                  <Info label="Payment Status" value={txn.paymentStatus || 'PENDING'} />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm pt-3 border-t border-gray-100">
+                  <Info label="Handover Status" value={txn.handoverStatus || 'PENDING'} />
+                  <Info label="Received Weight" value={txn.receivedWeightKg ? `${txn.receivedWeightKg} kg` : 'Pending weighbridge'} />
+                  <Info label="Processing Status" value={txn.status === 'RECEIVED' ? 'Material Received' : txn.status === 'PROCESSING' ? 'Under Processing' : txn.status === 'COMPLETED' ? 'Recycling Complete' : txn.status} />
+                  <Info label="Completion Status" value={txn.status === 'COMPLETED' ? 'Completed' : 'In Progress'} />
+                </div>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-gray-500 text-sm">
+                <Package className="mx-auto text-gray-400 mb-2" size={24} />
+                <p className="font-semibold text-gray-700">No transaction yet</p>
+                <p className="text-xs text-gray-500 mt-1">This lot is currently listed. Once a verified recycler accepts it, trade settlement details will appear here.</p>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
     </div>
   );

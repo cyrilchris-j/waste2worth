@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getLotById } from '../../services/lotService';
+import { getLotById, matchesCategory } from '../../services/lotService';
 import { transactionExistsForLot } from '../../services/transactionService';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, LotStatusBadge, LoadingSpinner, ErrorMessage } from '../../components/ui';
@@ -38,7 +38,7 @@ export default function LotDetail() {
       .finally(() => setLoading(false));
   }, [lotId]);
 
-  const isCompatible = (recyclerProfile?.acceptedCategories || []).includes(lot?.category ?? '' as never);
+  const isCompatible = matchesCategory(lot?.category ?? '', recyclerProfile?.acceptedCategories as string[]);
   const canAccept = lot?.status === 'LISTED' && !alreadyAccepted && isCompatible;
 
   if (loading) return <RecyclerLayout title="Lot Detail" backPath="/recycler/lots"><LoadingSpinner /></RecyclerLayout>;

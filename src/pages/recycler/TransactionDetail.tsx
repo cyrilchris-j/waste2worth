@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getTransactionById, updateTransactionStatus, confirmReceipt } from '../../services/transactionService';
-import { getLotById } from '../../services/lotService';
+import { getTransactionById, updateTransactionStatus, confirmReceipt, advanceTransactionStatus, logAuditEvent } from '../../services/transactionService';
+import { getLotById, updateLotStatus } from '../../services/lotService';
 import { getProcessingReportByTransaction } from '../../services/processingReportService';
+import { updatePublicTraceProjection } from '../../services/publicTraceService';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, TransactionStatusBadge, LoadingSpinner, ErrorMessage } from '../../components/ui';
 import type { Transaction, Lot, ProcessingReport } from '../../types';
@@ -40,7 +41,7 @@ const STATUS_ORDER = TIMELINE.map((t) => t.status);
 
 export default function TransactionDetail() {
   const { transactionId } = useParams<{ transactionId: string }>();
-  const { recyclerProfile } = useAuth();
+  const { recyclerProfile, userProfile, firebaseUser } = useAuth();
   const navigate = useNavigate();
 
   const [txn, setTxn]       = useState<Transaction | null>(null);
@@ -56,8 +57,12 @@ export default function TransactionDetail() {
     getTransactionById(transactionId)
       .then(async (t) => {
         if (!t) { setError('Transaction not found'); return; }
-        // Security: recycler can only see their own transactions
-        if (t.recyclerId !== recyclerProfile?.recyclerId) { setError('Access denied'); return; }
+        // Security: recycler can only see their own transactions (or admin)
+        const isOwner = t.recyclerId === recyclerProfile?.recyclerId ||
+                        t.recyclerId === userProfile?.userId ||
+                        t.recyclerId === firebaseUser?.uid ||
+                        userProfile?.role === 'ADMIN';
+        if (!isOwner) { setError('Access denied'); return; }
         setTxn(t);
         const [l, r] = await Promise.all([
           getLotById(t.lotId),
@@ -71,23 +76,84 @@ export default function TransactionDetail() {
   }, [transactionId, recyclerProfile]);
 
   const handleSimulatePayment = async () => {
-    if (!txn) return;
-    await updateTransactionStatus(txn.transactionId, { status: 'PAID', paymentStatus: 'CONFIRMED' });
-    toast.success('Payment simulated as confirmed');
-    setTxn((t) => t ? { ...t, status: 'PAID', paymentStatus: 'CONFIRMED' } : t);
+    if (!txn || !recyclerProfile) return;
+    try {
+      await advanceTransactionStatus(txn.transactionId, 'PAID', {
+        actorId: recyclerProfile.recyclerId,
+        actorRole: 'RECYCLER',
+      }, { amount: txn.totalAmount });
+      await updateTransactionStatus(txn.transactionId, { paymentStatus: 'CONFIRMED' });
+      await updateLotStatus(txn.lotId, 'PAID' as any);
+      await updatePublicTraceProjection(txn.lotId, {
+        status: 'PAID' as any,
+        timeline: [
+          {
+            status: 'PAID',
+            label: 'Payment Confirmed',
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
+      toast.success('Payment simulated as confirmed');
+      setTxn((t) => t ? { ...t, status: 'PAID', paymentStatus: 'CONFIRMED' } : t);
+    } catch (err) {
+      toast.error('Payment simulation failed');
+    }
   };
 
   const handleConfirmReceipt = async () => {
-    if (!txn || !receivedKg) { toast.error('Enter received weight'); return; }
+    if (!txn || !receivedKg || !recyclerProfile) { toast.error('Enter received weight'); return; }
     const kg = Number(receivedKg);
     if (kg <= 0) { toast.error('Enter a valid weight'); return; }
     setConfirmingReceipt(true);
     try {
-      await confirmReceipt(txn.transactionId, kg);
+      await confirmReceipt(txn.transactionId, kg, {
+        actorId: recyclerProfile.recyclerId,
+        actorRole: 'RECYCLER',
+      });
+      await updateLotStatus(txn.lotId, 'RECEIVED' as any);
+      await updatePublicTraceProjection(txn.lotId, {
+        status: 'RECEIVED' as any,
+        processingStatus: 'RECEIVED',
+        recoverySummary: { inputWeightKg: kg },
+        timeline: [
+          {
+            status: 'RECEIVED',
+            label: 'Material Received',
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
       toast.success('Receipt confirmed');
       setTxn((t) => t ? { ...t, status: 'RECEIVED', handoverStatus: 'COMPLETED', receivedWeightKg: kg } : t);
     } catch { toast.error('Failed to confirm receipt'); }
     finally { setConfirmingReceipt(false); }
+  };
+
+  const handleStartProcessing = async () => {
+    if (!txn || !recyclerProfile) return;
+    try {
+      await advanceTransactionStatus(txn.transactionId, 'PROCESSING', {
+        actorId: recyclerProfile.recyclerId,
+        actorRole: 'RECYCLER',
+      });
+      await updateLotStatus(txn.lotId, 'PROCESSING' as any);
+      await updatePublicTraceProjection(txn.lotId, {
+        status: 'PROCESSING' as any,
+        processingStatus: 'PROCESSING',
+        timeline: [
+          {
+            status: 'PROCESSING',
+            label: 'Dismantling & Processing',
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      });
+      toast.success('Processing started!');
+      setTxn((t) => t ? { ...t, status: 'PROCESSING' } : t);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start processing');
+    }
   };
 
   if (loading) return <RecyclerLayout title="Transaction" backPath="/recycler/transactions"><LoadingSpinner /></RecyclerLayout>;
@@ -198,7 +264,7 @@ export default function TransactionDetail() {
         {/* Actions */}
 
         {/* Simulate payment (hackathon MVP) */}
-        {txn.status === 'CREATED' && (
+        {(txn.status === 'CREATED' || txn.status === 'ACCEPTED' || txn.status === 'PAYMENT_PENDING') && txn.paymentStatus !== 'CONFIRMED' && (
           <div className="section-card bg-blue-50 border-blue-200">
             <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
               <CreditCard size={16} />
@@ -230,6 +296,20 @@ export default function TransactionDetail() {
                 Confirm
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Initiate processing if RECEIVED */}
+        {txn.status === 'RECEIVED' && (
+          <div className="section-card space-y-2">
+            <p className="text-sm font-semibold text-gray-800">Initiate Processing</p>
+            <p className="text-xs text-gray-500">Begin physical dismantling and material recovery for this received lot.</p>
+            <Button fullWidth variant="outline" onClick={handleStartProcessing}>
+              <span className="flex items-center justify-center gap-2">
+                <Cpu size={18} />
+                <span>Start Processing</span>
+              </span>
+            </Button>
           </div>
         )}
 

@@ -1,8 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getTransactionById } from '../../services/transactionService';
+import { getTransactionById, advanceTransactionStatus } from '../../services/transactionService';
 import { getProcessingReportByTransaction, createProcessingReport, uploadProcessingEvidence, appendEvidenceToReport } from '../../services/processingReportService';
+import { updateLotStatus } from '../../services/lotService';
+import { getPublicTrace, updatePublicTrace } from '../../services/publicTraceService';
+import { canTransition } from '../../utils/engines';
+import { LotStatus } from '../../types/domain';
 import { RecyclerLayout } from '../../components/layout/RecyclerLayout';
 import { Button, Input, Textarea, Select, LoadingSpinner, ErrorMessage } from '../../components/ui';
 import { PROCESSING_CAPABILITIES, RECOVERED_MATERIALS } from '../../types';
@@ -17,7 +21,7 @@ interface RecoveredRow {
 
 export default function ProcessingReport() {
   const { transactionId, reportId } = useParams<{ transactionId?: string; reportId?: string }>();
-  const { recyclerProfile, firebaseUser } = useAuth();
+  const { recyclerProfile, firebaseUser, userProfile } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -49,8 +53,17 @@ export default function ProcessingReport() {
       try {
         if (transactionId) {
           const t = await getTransactionById(transactionId);
-          if (!t || t.recyclerId !== recyclerProfile?.recyclerId) { setError('Transaction not found or access denied'); return; }
+          const isOwner = t && (
+            t.recyclerId === recyclerProfile?.recyclerId ||
+            t.recyclerId === userProfile?.userId ||
+            t.recyclerId === firebaseUser?.uid ||
+            userProfile?.role === 'ADMIN'
+          );
+          if (!t || !isOwner) { setError('Transaction not found or access denied'); return; }
           setTxn(t);
+          if (t.receivedWeightKg) {
+            setForm((f) => ({ ...f, receivedWeightKg: String(t.receivedWeightKg) }));
+          }
           const r = await getProcessingReportByTransaction(transactionId);
           if (r) setExistingReport(r);
         } else if (reportId) {
@@ -106,6 +119,35 @@ export default function ProcessingReport() {
       .map((r) => ({ material: r.material as RecoveredMaterialEntry['material'], quantityKg: Number(r.quantityKg) }));
 
     try {
+      // 1. Advance transaction through lifecycle with state machine validation (FIX 5):
+      // Expected lifecycle: RECEIVED -> PROCESSING -> REPORT_PENDING -> COMPLETED
+      let currentStatus = txn.status;
+
+      // If still RECEIVED, transition to PROCESSING first
+      if (currentStatus === 'RECEIVED') {
+        if (!canTransition(currentStatus, LotStatus.PROCESSING)) {
+          throw new Error(`Cannot transition from ${currentStatus} to PROCESSING`);
+        }
+        await advanceTransactionStatus(txn.transactionId, LotStatus.PROCESSING, {
+          actorId: recyclerProfile.recyclerId,
+          actorRole: 'RECYCLER',
+        });
+        currentStatus = LotStatus.PROCESSING;
+      }
+
+      // Transition from PROCESSING to REPORT_PENDING on report submission
+      if (currentStatus === 'PROCESSING') {
+        if (!canTransition(currentStatus, LotStatus.REPORT_PENDING)) {
+          throw new Error(`Cannot transition from ${currentStatus} to REPORT_PENDING`);
+        }
+        await advanceTransactionStatus(txn.transactionId, LotStatus.REPORT_PENDING, {
+          actorId: recyclerProfile.recyclerId,
+          actorRole: 'RECYCLER',
+        });
+        currentStatus = LotStatus.REPORT_PENDING;
+      }
+
+      // 2. Create the processing report record with consistent IDs
       const reportId = await createProcessingReport({
         transactionId: txn.transactionId,
         lotId: txn.lotId,
@@ -123,10 +165,60 @@ export default function ProcessingReport() {
         await appendEvidenceToReport(reportId, pendingEvidence);
       }
 
-      toast.success('Processing report submitted!');
+      // 3. All required processing report data is valid -> transition REPORT_PENDING to COMPLETED
+      if (currentStatus === LotStatus.REPORT_PENDING) {
+        if (!canTransition(currentStatus, LotStatus.COMPLETED)) {
+          throw new Error(`Cannot transition from ${currentStatus} to COMPLETED`);
+        }
+        await advanceTransactionStatus(txn.transactionId, LotStatus.COMPLETED, {
+          actorId: recyclerProfile.recyclerId,
+          actorRole: 'RECYCLER',
+        }, { reportId, processedWeightKg: Number(form.processedWeightKg) });
+      }
+
+      // 4. Update the parent lot to COMPLETED
+      await updateLotStatus(txn.lotId, 'COMPLETED');
+
+      // 5. Update public trace projection (FIX 3 + FIX 5)
+      const existingTrace = await getPublicTrace(txn.lotId);
+      const pastTimeline = existingTrace?.timeline || [
+        { status: 'LOT_LISTED', label: 'Lot Listed on Exchange', timestamp: new Date().toISOString() },
+        { status: 'LOT_ACCEPTED', label: 'Accepted by Recycler', timestamp: new Date().toISOString() },
+      ];
+
+      await updatePublicTrace(txn.lotId, {
+        status: 'COMPLETED',
+        processingStatus: 'COMPLETED',
+        recoverySummary: {
+          inputWeightKg: Number(form.receivedWeightKg),
+          processedWeightKg: Number(form.processedWeightKg),
+          residualWeightKg: Number(form.residualWeightKg) || 0,
+          materials: recoveredMaterials.map((rm) => ({
+            material: rm.material,
+            quantityKg: rm.quantityKg,
+          })),
+        },
+        timeline: [
+          ...pastTimeline.filter((t) => t.status !== 'PROCESSING' && t.status !== 'COMPLETED'),
+          { status: 'PROCESSING_STARTED', label: `Processing at ${recyclerProfile.companyName || recyclerProfile.facilityName || 'Facility'}`, timestamp: new Date().toISOString() },
+          { status: 'PROCESSING_REPORT_SUBMITTED', label: 'Statutory Processing Report Filed', timestamp: new Date().toISOString() },
+          { status: 'LOT_COMPLETED', label: `Recovery Complete: ${recoveredMaterials.map((m) => `${m.quantityKg}kg ${m.material}`).join(', ')} recovered`, timestamp: new Date().toISOString() },
+        ],
+        publicMilestones: [
+          ...(existingTrace?.publicMilestones || ['Declaration verified', 'Accepted by Recycler']),
+          'Processing Completed',
+          'Materials Recovered',
+        ],
+      });
+
+      toast.success('Processing report submitted and lot completed!');
       navigate(`/recycler/transactions/${txn.transactionId}`);
-    } catch { toast.error('Failed to submit report'); }
-    finally { setSubmitting(false); }
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to submit report');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) return <RecyclerLayout title="Processing Report" backPath="/recycler/reports"><LoadingSpinner /></RecyclerLayout>;

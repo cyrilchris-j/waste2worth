@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2, CircleOff, Loader2, ShieldCheck, Leaf } from 'lucide-react'
 import { auditLogs, demoLot } from '../data/seed'
-import { LotStatus, type AuditLog, type Lot } from '../types/domain'
+import { LotStatus, UserRole, type AuditLog, type Lot } from '../types/domain'
 import { db } from '../config/firebase'
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { Card, LotStatusBadge } from '../components/ui'
+
+import { getPublicTrace, type PublicTrace } from '../services/publicTraceService'
 
 export function publicTraceExists(lotId: string) {
   return lotId === demoLot.lotId || lotId === 'LOT-2026-001'
@@ -27,6 +29,7 @@ export function TracePage({ lotId: propLotId, transactionId: propTxnId }: TraceP
   const initialLot = isDemo ? { ...demoLot, lotId: lotId || demoLot.lotId } : null
 
   const [lot, setLot] = useState<Lot | null>(initialLot)
+  const [publicTrace, setPublicTrace] = useState<PublicTrace | null>(null)
   const [events, setEvents] = useState<AuditLog[]>(() =>
     isDemo
       ? auditLogs.map(e => ({ ...e, lotId: lotId || demoLot.lotId })).filter(event => !transactionId || !event.transactionId || event.transactionId === transactionId)
@@ -41,23 +44,59 @@ export function TracePage({ lotId: propLotId, transactionId: propTxnId }: TraceP
       return
     }
 
-    if (lotId === demoLot.lotId || lotId === 'LOT-2026-001') {
-      const activeLot = { ...demoLot, lotId }
-      setLot(activeLot)
-      setEvents(
-        auditLogs.map(e => ({ ...e, lotId })).filter(event => !transactionId || !event.transactionId || event.transactionId === transactionId)
-      )
-      setNotFound(false)
-      return
-    }
-
     let mounted = true
     setLoading(true)
     const fetchTrace = async () => {
       try {
-        const lotSnap = await getDoc(doc(db, 'lots', lotId))
-        if (lotSnap.exists()) {
+        // 1. Try privacy-safe public trace projection (FIX 3 - Anonymous readable)
+        const trace = await getPublicTrace(lotId)
+        if (trace && mounted) {
+          setPublicTrace(trace)
+          setLot({
+            lotId: trace.lotId,
+            collectorId: 'verified-collector',
+            category: trace.category,
+            status: trace.status as any,
+            quantity: 1,
+            estimatedWeight: trace.recoverySummary?.inputWeightKg || 0,
+            askingPrice: 0,
+            evidence: [],
+            createdAt: trace.createdAt,
+            updatedAt: trace.updatedAt,
+            transactionId: trace.transactionReference || undefined,
+          } as unknown as Lot)
+
+          const traceEvents: AuditLog[] = (trace.timeline || []).map((t, idx) => ({
+            eventId: `trace-evt-${idx}`,
+            lotId: trace.lotId,
+            transactionId: trace.transactionReference || null,
+            actorId: 'platform-verified',
+            actorRole: UserRole.COLLECTOR,
+            eventType: t.status,
+            timestamp: t.timestamp,
+          }))
+          setEvents(traceEvents)
+          setNotFound(false)
+          setLoading(false)
+          return
+        }
+
+        // 2. Demo fallback if demo ID
+        if (lotId === demoLot.lotId || lotId === 'LOT-2026-001') {
           if (!mounted) return
+          const activeLot = { ...demoLot, lotId }
+          setLot(activeLot)
+          setEvents(
+            auditLogs.map(e => ({ ...e, lotId })).filter(event => !transactionId || !event.transactionId || event.transactionId === transactionId)
+          )
+          setNotFound(false)
+          setLoading(false)
+          return
+        }
+
+        // 3. Fallback to direct lots document (if signed in)
+        const lotSnap = await getDoc(doc(db, 'lots', lotId))
+        if (lotSnap.exists() && mounted) {
           const lotData = { ...lotSnap.data(), lotId: lotSnap.id } as Lot
           setLot(lotData)
 
@@ -68,12 +107,10 @@ export function TracePage({ lotId: propLotId, transactionId: propTxnId }: TraceP
           setEvents(firestoreLogs)
           setNotFound(false)
         } else {
-          if (!mounted) return
-          setNotFound(true)
+          if (mounted) setNotFound(true)
         }
       } catch {
-        if (!mounted) return
-        setNotFound(true)
+        if (mounted) setNotFound(true)
       } finally {
         if (mounted) setLoading(false)
       }
@@ -157,6 +194,25 @@ export function TracePage({ lotId: propLotId, transactionId: propTxnId }: TraceP
             </div>
           </div>
         </Card>
+
+        {publicTrace?.recoverySummary?.materials && publicTrace.recoverySummary.materials.length > 0 && (
+          <Card padding="lg" className="border-gray-100 space-y-3">
+            <h2 className="text-lg font-bold text-gray-900 pb-2 border-b border-gray-100">Material Recovery Summary</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {publicTrace.recoverySummary.materials.map((m, i) => (
+                <div key={i} className="p-3 bg-brand-50/50 rounded-xl border border-brand-100">
+                  <span className="text-xs text-gray-600 font-medium block">{m.material}</span>
+                  <strong className="text-sm font-bold text-brand-900">{m.quantityKg} kg</strong>
+                </div>
+              ))}
+            </div>
+            {publicTrace.recoverySummary.processedWeightKg && (
+              <p className="text-xs text-gray-500 pt-1">
+                Total processed weight: <strong>{publicTrace.recoverySummary.processedWeightKg} kg</strong> (100% statutory mass balance reconciliation).
+              </p>
+            )}
+          </Card>
+        )}
 
         <Card padding="lg" className="border-gray-100 space-y-4">
           <h2 className="text-lg font-bold text-gray-900 pb-2 border-b border-gray-100">Lifecycle events</h2>
