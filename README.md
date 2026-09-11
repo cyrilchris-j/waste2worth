@@ -22,7 +22,7 @@ This can result in:
 * Loss of valuable recoverable materials
 * Environmental and health risks
 
-The challenge is to bridge informal e-waste collection with the formal recycling ecosystem while supporting multilingual access, transparent transactions, material traceability, safe handling, unreliable internet connectivity, and low-end Android devices.
+The challenge is to bridge informal e-waste collection with the formal recycling ecosystem while supporting multilingual access, transparent transactions, material traceability, safe-handling,unreliable internet connectivity, and low-end Android devices.
 
 ---
 
@@ -44,7 +44,7 @@ Collectors can:
 * Create a digital e-waste lot
 * Find suitable verified recyclers
 * Accept transparent transactions
-* Track payments and handovers
+* Track payments & handovers
 * View transaction history
 
 ### Recycler / Buyer
