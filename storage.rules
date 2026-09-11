@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Evidence photos uploaded by collectors
+    match /evidence/{collectorId}/{lotId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == collectorId || request.auth.token.role == 'ADMIN');
+    }
+
+    // Legacy lot evidence path compatibility
+    match /lots/{collectorId}/{lotId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == collectorId || request.auth.token.role == 'ADMIN');
+    }
+
+    // Processing report photos & certificates uploaded by recyclers
+    match /processingReports/{recyclerId}/{reportId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == recyclerId || request.auth.token.role == 'ADMIN');
+    }
+  }
+}

@@ -1,0 +1,46 @@
+import { LotStatus, PaymentStatus, type HandoverRecord, type Payment, type Transaction } from '../types/domain'
+import { canTransition } from '../utils/engines'
+
+export function transitionTransaction(transaction: Transaction, nextStatus: LotStatus): Transaction {
+  if (!canTransition(transaction.status, nextStatus)) {
+    throw new Error(`Invalid lifecycle transition: ${transaction.status} to ${nextStatus}`)
+  }
+  return { ...transaction, status: nextStatus, updatedAt: new Date().toISOString() }
+}
+
+export function createMockPayment(transaction: Transaction, delivery = 250): Payment {
+  const amount = transaction.amount ?? transaction.agreedPrice ?? 0
+  const platformFee = Math.round(amount * 0.02)
+  return {
+    paymentId: `PAY-${transaction.transactionId}`,
+    transactionId: transaction.transactionId,
+    amount,
+    breakdown: {
+      ewasteValue: amount,
+      delivery,
+      platformFee,
+      total: amount + delivery + platformFee
+    },
+    method: 'MOCK',
+    status: PaymentStatus.PENDING,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+}
+
+export function settleMockPayment(payment: Payment, success: boolean): Payment {
+  return {
+    ...payment,
+    status: success ? PaymentStatus.PAID : PaymentStatus.FAILED,
+    updatedAt: new Date().toISOString()
+  }
+}
+
+export function confirmHandover(record: HandoverRecord, received = false): HandoverRecord {
+  return {
+    ...record,
+    status: received ? 'RECEIVED' : 'HANDED_OVER',
+    timestamp: new Date().toISOString(),
+    confirmationReference: `DEMO-${Date.now()}`
+  }
+}
