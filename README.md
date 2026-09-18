@@ -3,7 +3,7 @@
 
 ## Challenge 19 — Digital Platform for Formal E-Waste Collection and Recycling
 
-> A secure, transparent, offline-first digital platform connecting e-waste collectors with verified recycling entities through condition-based listings, fair-value estimation, controlled transactions, traceable handovers, and post-recycling reporting.
+> A secure, transparent, offline-first digital platform connecting e-waste collectors with verified recycling entities through condition-based listings, fair-value estimation,controlled transactions,traceable handovers,and post-recycling reporting.
 
 ---
 
@@ -22,7 +22,7 @@ This can result in:
 * Loss of valuable recoverable materials
 * Environmental and health risks
 
-The challenge is to bridge informal e-waste collection with the formal recycling ecosystem while supporting multilingual access, transparent transactions, material traceability, safe handling, unreliable internet connectivity, and low-end Android devices.
+The challenge is to bridge informal e-waste collection with the formal recycling ecosystem while supporting multilingual access, transparent transactions, material traceability, safe-handling,unreliable internet connectivity, and low-end Android devices.
 
 ---
 
@@ -40,11 +40,11 @@ Collectors can:
 * Upload original evidence/photos
 * Specify quantity and estimated weight
 * Set an asking price
-* Compare the asking price with platform reference prices
+* Compare the asking price with platform reference price
 * Create a digital e-waste lot
 * Find suitable verified recyclers
 * Accept transparent transactions
-* Track payments and handovers
+* Track payments & handovers
 * View transaction history
 
 ### Recycler / Buyer
@@ -60,7 +60,7 @@ Recyclers can:
 * Review complete item descriptions and evidence
 * Review price references
 * Accept/reject listings
-* Explicitly accept platform terms and transaction conditions
+* Explicitly accept platform terms & transaction conditions
 * Complete payment
 * Confirm material receipt
 * Submit post-recycling/processing reports
